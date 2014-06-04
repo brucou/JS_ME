@@ -1,0 +1,47 @@
+h1 {
+    color: #c65c3f;
+    font-family: "Playfair Display", serif;
+    font-size: 40px;
+    font-weight: normal;
+    line-height: 48px;
+    margin: 0 0 26px;
+}
+
+h2 {
+    color: #363636;
+    font-family: "Playfair Display", serif;
+    font-size: 26px;
+    font-weight: normal;
+    line-height: 36px;
+    margin: 0 0 18px;
+    padding: 12px 0 0;
+}
+
+h3 {
+    color: #c65c3f;
+    font-family: "Open Sans", sans-serif;
+    font-size: 16px;
+    font-weight: bold;
+    line-height: 18px;
+    margin: 0 0 18px;
+    padding: 12px 0 0;
+    text-transform: uppercase;
+}
+
+p {
+    color: #363636;
+    font-family: "Open Sans", sans-serif;
+    font-size: 14px;
+    line-height: 18px;
+    margin: 0 0 18px;
+}
+
+.post-info {
+    color: #b8b8b8;
+    font-family: "Open Sans", sans-serif;
+    font-size: 12px;
+    font-weight: bold;
+    line-height: 12px;
+    margin: 0 0 18px;
+    text-transform: uppercase;
+}
