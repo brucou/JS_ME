@@ -51,7 +51,7 @@ function get_text_stats(text) {
     */
    logEntry("get_text_stats");
    if (!text) {
-      logWrite(DBG_TAGS.ERROR, "invalid parameter text", text);
+      logWrite(DBG.TAG.ERROR, "invalid parameter text", text);
       logExit("get_text_stats");
    }
 
@@ -63,7 +63,7 @@ function get_text_stats(text) {
    if (sentence_number === 0) {//if there is no DOT in the text, we still count one sentence
       sentence_number = 1;
    }
-   //logWrite(DBG_TAGS.INFO, "Input & Output", text, sentence_number, word_number);
+   //logWrite(DBG.TAG.INFO, "Input & Output", text, sentence_number, word_number);
    logExit("get_text_stats");
    return {sentence_number: sentence_number, avg_sentence_length: Math.round(word_number / sentence_number)};
 }

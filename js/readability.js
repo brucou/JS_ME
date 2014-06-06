@@ -39,11 +39,11 @@ function extract_relevant_text_from_html(html_text) {
       var pdStatRow = aData[i]; //ParagraphData object
       var div = pdStatRow.enclosing_div;
       var tagName = pdStatRow.tag;
-      logWrite(DBG_TAGS.DEBUG, "i, div, tagName", i, div, tagName);
+      logWrite(DBG.TAG.DEBUG, "i, div, tagName", i, div, tagName);
 
       if (tagName === "P") {// we only compute summary stats for some tags
          var iIndex = getIndexInArray(aDivRow, "div", div);
-         logWrite(DBG_TAGS.DEBUG, "iIndex", iIndex);
+         logWrite(DBG.TAG.DEBUG, "iIndex", iIndex);
 
          if (iIndex > -1) { // div class already added to the stat array
             aDivRow[iIndex].sum_sentence_number += pdStatRow.sentence_number;
@@ -90,10 +90,10 @@ function extract_relevant_text_from_html(html_text) {
       var div = pdStatRowPartial.div;
       var div_selector = make_selector_from_concat(div, CLASS_SELECTOR_CHAR, ID_SELECTOR_CHAR);
       if (div_selector.length === 0) { // this is pathological case, where the relevant text is directly under the body tag
-         logWrite(DBG_TAGS.WARNING, "div_selector is empty, ignoring");
+         logWrite(DBG.TAG.WARNING, "div_selector is empty, ignoring");
          continue;
       }
-      logWrite("INFO", "div_selector", div_selector);
+      logWrite(DBG.TAG.INFO, "div_selector", div_selector);
       wDest.append($(TEXT_SELECTORS, div_selector));
       /*
        NOTE : Another option si wDest.append($(div_selector));
@@ -160,11 +160,11 @@ function generateTagAnalysisData(html_text, source_id, tagHTML) {
             }
             break;
          case 3:
-            logWrite("INFO", "text", element);
+            logWrite(DBG.TAG.WARNING, "text", element);
             break;
          default:
             //do nothing
-            logWrite("INFO", "do nothing");
+            logWrite(DBG.TAG.WARNING, "do nothing");
       }
 
    }
@@ -173,7 +173,7 @@ function generateTagAnalysisData(html_text, source_id, tagHTML) {
     Empty the added div
     */
 //   $("#" + source_id).html("");
-   logWrite(DBG_TAGS.INFO, "aData", aData);
+   logWrite(DBG.TAG.INFO, "aData", aData);
    logExit("generateTagAnalysisData");
    return aData;
 }
@@ -184,19 +184,19 @@ function make_selector_from_concat(div, class_selector_char, id_selector_char) {
     KNOWN BUG : if there is a div class "undefined" then it will be treated as if the div had no class name defined
     */
    logEntry("make_selector_from_concat");
-   logWrite(DBG_TAGS.DEBUG, "div", div);
+   logWrite(DBG.TAG.DEBUG, "div", div);
 
 
    var sSplit = div.split(class_selector_char);
    var element_id = (sSplit[0] === '#undefined') ? "" : (sSplit[0]); // NOTE, if element_id is set, it already has a # sign
    var element_class = (sSplit[1].length === 0) ? "" : (class_selector_char + sSplit[1]);
 
-   logWrite(DBG_TAGS.DEBUG, "sSplit", sSplit);
-   logWrite(DBG_TAGS.DEBUG, "element_id, element_id_length", element_id, element_id.length);
-   logWrite(DBG_TAGS.DEBUG, "element_id, element_class", element_id, element_class);
+   logWrite(DBG.TAG.DEBUG, "sSplit", sSplit);
+   logWrite(DBG.TAG.DEBUG, "element_id, element_id_length", element_id, element_id.length);
+   logWrite(DBG.TAG.DEBUG, "element_id, element_class", element_id, element_class);
 
    var element_selector = element_id + element_class;
-   logWrite(DBG_TAGS.DEBUG, "element_selector", element_selector);
+   logWrite(DBG.TAG.DEBUG, "element_selector", element_selector);
 
    logExit("make_selector_from_concat");
    return element_selector;
@@ -228,7 +228,7 @@ function create_div_in_DOM(div_id) {
     If already existing, empty them
     */
    if ($("#" + div_id).length !== 0) {
-      logWrite(DBG_TAGS.WARNING, "html_text_to_DOM: already existing id. Was removed", div_id);
+      logWrite(DBG.TAG.WARNING, "html_text_to_DOM: already existing id. Was removed", div_id);
       $("#" + div_id).remove();
    }
    $("body").append($("<div id='" + div_id + "'/>"));
