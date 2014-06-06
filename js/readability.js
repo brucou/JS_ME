@@ -6,6 +6,13 @@ var CLASS_SELECTOR_CHAR = ".";
 var ID_SELECTOR_CHAR = "#";
 
 // todo: paragraghData.enclosing_div_id = $(hierarchy[0]).attr("id"); change it so that if undefined, it is set to "" //adjust the corresponding function make_selector_from_concat
+// issue: deal with the error when the page cannot be loaded (undefined)
+function make_article_readable(your_url) {
+   url_load(your_url, extract_relevant_text_from_html);
+   $("#destination p").mousemove(function (e) {
+      console.log("Found: " + getWordAtPoint(e.target, e.clientX, e.clientY));
+   });
+}
 
 function extract_relevant_text_from_html(html_text) {
    /*
@@ -77,6 +84,8 @@ function extract_relevant_text_from_html(html_text) {
           pdStatRowPartial.avg_avg_sentence_length >= MIN_AVG_AVG_SENTENCE_LENGTH) {
          // that div is selected candidate for display
          selectedDivs.push(pdStatRowPartial);
+         logWrite(DBG.TAG.INFO, "div class, sentence_number, avg w/s", pdStatRowPartial.div,
+                  pdStatRowPartial.sum_sentence_number, pdStatRowPartial.avg_avg_sentence_length);
       }
    }
 
@@ -87,8 +96,7 @@ function extract_relevant_text_from_html(html_text) {
    var wDest = $("#" + DEST);
    for (i = 0; i < selectedDivs.length; i++) {
       var pdStatRowPartial = selectedDivs[i];
-      var div = pdStatRowPartial.div;
-      var div_selector = make_selector_from_concat(div, CLASS_SELECTOR_CHAR, ID_SELECTOR_CHAR);
+      var div_selector = pdStatRowPartial.div;
       if (div_selector.length === 0) { // this is pathological case, where the relevant text is directly under the body tag
          logWrite(DBG.TAG.WARNING, "div_selector is empty, ignoring");
          continue;
@@ -143,6 +151,8 @@ function generateTagAnalysisData(html_text, source_id, tagHTML) {
             var tagName = element.tagName;
             if (tagName !== "DIV") {
                var hierarchy = $(this).parentsUntil("body", "div") || [$("body")]; //!! to test! if no div enclosing, then body is used
+               var div = $(hierarchy[0]); // By construction can't be null right?
+
 
                paragraghData.$el = $(this);
                paragraghData.tag = tagName;
@@ -150,11 +160,12 @@ function generateTagAnalysisData(html_text, source_id, tagHTML) {
                var text_stats = get_text_stats(paragraghData.text);
                paragraghData.sentence_number = text_stats.sentence_number;
                paragraghData.avg_sentence_length = text_stats.avg_sentence_length;
-               paragraghData.enclosing_div_id = $(hierarchy[0]).attr("id");
-               paragraghData.enclosing_div_class = $(hierarchy[0]).attr("class");
+               paragraghData.enclosing_div_id = (typeof div.attr("id") === "undefined") ? "" : div.attr("id");
+               paragraghData.enclosing_div_class = (typeof div.attr("class") === "undefined") ? "" : div.attr("class");
                paragraghData.enclosing_div =
-               [ID_SELECTOR_CHAR + paragraghData.enclosing_div_id, paragraghData.enclosing_div_class
-               ].join(CLASS_SELECTOR_CHAR);
+               ((paragraghData.enclosing_div_id !== "") ? ID_SELECTOR_CHAR + paragraghData.enclosing_div_id : "") +
+               ((paragraghData.enclosing_div_class !== "") ? CLASS_SELECTOR_CHAR + paragraghData.enclosing_div_class :
+                "")
 
                aData.push(paragraghData);
             }
@@ -173,33 +184,9 @@ function generateTagAnalysisData(html_text, source_id, tagHTML) {
     Empty the added div
     */
 //   $("#" + source_id).html("");
-   logWrite(DBG.TAG.INFO, "aData", aData);
+   logWrite(DBG.TAG.DEBUG, "aData", aData);
    logExit("generateTagAnalysisData");
    return aData;
-}
-
-function make_selector_from_concat(div, class_selector_char, id_selector_char) {
-   /* INPUT : a div constructed by function generateTagAnalysisData()
-    OUTPUT : a selector that can be used as a context in a jQuery call
-    KNOWN BUG : if there is a div class "undefined" then it will be treated as if the div had no class name defined
-    */
-   logEntry("make_selector_from_concat");
-   logWrite(DBG.TAG.DEBUG, "div", div);
-
-
-   var sSplit = div.split(class_selector_char);
-   var element_id = (sSplit[0] === '#undefined') ? "" : (sSplit[0]); // NOTE, if element_id is set, it already has a # sign
-   var element_class = (sSplit[1].length === 0) ? "" : (class_selector_char + sSplit[1]);
-
-   logWrite(DBG.TAG.DEBUG, "sSplit", sSplit);
-   logWrite(DBG.TAG.DEBUG, "element_id, element_id_length", element_id, element_id.length);
-   logWrite(DBG.TAG.DEBUG, "element_id, element_class", element_id, element_class);
-
-   var element_selector = element_id + element_class;
-   logWrite(DBG.TAG.DEBUG, "element_selector", element_selector);
-
-   logExit("make_selector_from_concat");
-   return element_selector;
 }
 
 function getIndexInArray(aArray, field_to_search, value) {

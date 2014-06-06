@@ -2,8 +2,8 @@
  * Created by bcouriol on 1/06/14.
  */
 
-// todo à chaque TAG ajouter le flag correspond true ou pas true pour inhiber la fonction. Ajouter d'autre tags?
-// nice to have changer tous les DBG_ en DBG., revoir les tags dans le code si ils correspondent bien a la semantique
+// nice to have Ajouter d'autre tags?
+// nice to have changer tous les DBG_ en DBG.
 
 var DBG_INDENT_PREFIX = "";
 var DBG_INDENT_STRING = "--";
@@ -43,7 +43,6 @@ function logExit(context) {
    } else {
       logWrite(DBG.TAG.ERROR, "logExit called probably without matching logEntry");
    }
-
 }
 
 function logWrite(tag, text, arg) {
@@ -69,10 +68,10 @@ function logWrite(tag, text, arg) {
    console.log(tag + DBG.SEP.TAG + text);
 }
 
-function setDebugMode(debug_category, debug_mode) {
+function setDebugMode(tag, flag) {
    /*
     for the moment one mode, if parameter is false, then don't print the logWrite DEBUG
     INPUT : debug_mode : boolean (true or false)
     */
-   DBG.FLAG[debug_category] = debug_mode;
+   DBG.FLAG[tag] = flag;
 }

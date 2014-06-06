@@ -15,6 +15,7 @@
         <link rel="stylesheet" href="css/normalize.css">
         <link rel="stylesheet" href="css/main.css">
         <link rel="stylesheet" href="css/style.css">
+        <link rel="stylesheet" href="css/screen.css">
         <link href='http://fonts.googleapis.com/css?family=Enriqueta:400,700' rel='stylesheet' type='text/css'>
         <script src="js/vendor/modernizr-2.6.2.min.js"></script>
     </head>
@@ -34,8 +35,15 @@
         <script src="js/readability.js"></script>
         <script src="js/url_load.js"></script>
         <script src="js/main.js"></script>
+        <script src="js/stub.js"></script>
 
-
+        <select id="url_param" onChange="stub();">
+            <option value=""></option>
+            <option value="http://www.lemonde.fr/pixels/article/2014/06/03/accueillir-snowden-en-france-les-points-cles-du-debat_4431332_4408996.html">Le monde</option>
+            <option value="http://internacional.elpais.com/internacional/2014/06/03/actualidad/1401797293_595478.html">El Pais</option>
+            <option value="http://mobile.nytimes.com/2014/06/07/sports/tennis/novak-djokovic-and-rafael-nadal-in-french-open-final.html">nytimes</option>
+            <option value="http://www.theguardian.com/media/2014/jun/06/twitter-trolls-abuse-olympic-swimmer-rebecca-adlington">The Guardian</option>
+        </select>
 
     </body>
 </html>
