@@ -4,6 +4,7 @@
 function stub() {
    logEntry("stub");
    var my_url = $("#url_param option:selected").val();
+   $("#url").text(my_url);
    make_article_readable (my_url);
    logWrite(DBG.TAG.DEBUG, "url", my_url);
    logExit("stub");

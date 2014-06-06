@@ -15,4 +15,4 @@ setDebugMode(DBG.TAG.DEBUG, false);
 // todo modularize js
 // todo make a input text box that would be your_url - includes some validation that there is a http:// ?
 // nice to have documentation in code, refactoring, and split in file
-// nice to have improve CSS of page result - take the whole page till div
+// nice to have improve CSS of page result - take the whole page till div to include also table and images

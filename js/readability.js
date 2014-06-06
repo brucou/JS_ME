@@ -1,7 +1,6 @@
 /**
  * Created by bcouriol on 5/06/14.
  */
-var aData, aDivRow, selectedDivs; // !! to delete at the END
 var CLASS_SELECTOR_CHAR = ".";
 var ID_SELECTOR_CHAR = "#";
 
@@ -41,7 +40,6 @@ function extract_relevant_text_from_html(html_text) {
     #avg #avg_xx > min number (language dependent)
     */
    var aDivRow = []; // contains stats for each div
-   var i = 0; // loop variable
    for (i = 0; i < aData.length; i++) {
       var pdStatRow = aData[i]; //ParagraphData object
       var div = pdStatRow.enclosing_div;
@@ -70,16 +68,10 @@ function extract_relevant_text_from_html(html_text) {
       aDivRow[i].sum_avg_sentence_length / aDivRow[i].count_avg_sentence_length;
    }
 
-   /* Sort it
-    aDivRow.sort(function (aDR1, aDR2) { // sorting two aDivRow[index] object on sum_sentence_number
-    return aDR2.sum_sentence_number - adr1.sum_sentence_number;
-    });
-    */ // Don't sort it, I need in order of DOM traversal to present it in the same order
-
    /* Identify the div classes to keep in the DOM */
    var selectedDivs = [];
    for (i = 0; i < aDivRow.length; i++) {
-      var pdStatRowPartial = aDivRow[i]; //ParagraphData object
+       pdStatRowPartial = aDivRow[i]; //ParagraphData object
       if (pdStatRowPartial.sum_sentence_number >= MIN_SENTENCE_NUMBER &&
           pdStatRowPartial.avg_avg_sentence_length >= MIN_AVG_AVG_SENTENCE_LENGTH) {
          // that div is selected candidate for display
@@ -94,8 +86,11 @@ function extract_relevant_text_from_html(html_text) {
     NOTE : might be necessary to have a special treatment for div with no classes or id selectors
     */
    var wDest = $("#" + DEST);
+   wDest.append($("<div id='article' class='title'/>"));
+   wTitle = $("#article.title");
+   wTitle.text($("title").text());
    for (i = 0; i < selectedDivs.length; i++) {
-      var pdStatRowPartial = selectedDivs[i];
+       pdStatRowPartial = selectedDivs[i];
       var div_selector = pdStatRowPartial.div;
       if (div_selector.length === 0) { // this is pathological case, where the relevant text is directly under the body tag
          logWrite(DBG.TAG.WARNING, "div_selector is empty, ignoring");
@@ -120,7 +115,13 @@ function extract_relevant_text_from_html(html_text) {
    logExit("extract_relevant_text_from_html");
 }
 
-function generateTagAnalysisData(html_text, source_id, tagHTML) {
+function generateTagAnalysisData(source_id, tagHTML) {
+   /*
+   INPUT:
+     source_id : the id of the div source within which to select the text
+      tagHTML : the tags to filter the div (e.g. text tags)
+   OUTPUT : returns an array with text stats in ParagraphData object (div class, sentence number etc.)
+    */
    logEntry("generateTagAnalysisData");
 
    var aData = []; // array which will contain the analysis of text paragraphs
@@ -165,7 +166,7 @@ function generateTagAnalysisData(html_text, source_id, tagHTML) {
                paragraghData.enclosing_div =
                ((paragraghData.enclosing_div_id !== "") ? ID_SELECTOR_CHAR + paragraghData.enclosing_div_id : "") +
                ((paragraghData.enclosing_div_class !== "") ? CLASS_SELECTOR_CHAR + paragraghData.enclosing_div_class :
-                "")
+                "");
 
                aData.push(paragraghData);
             }
@@ -190,7 +191,7 @@ function generateTagAnalysisData(html_text, source_id, tagHTML) {
 }
 
 function getIndexInArray(aArray, field_to_search, value) {
-   var i = 0, iIndex = -1;
+   iIndex = -1;
    for (i = 0; i < aArray.length; i++) {
       if (aArray[i][field_to_search] === value) {
          iIndex = i;
@@ -214,9 +215,10 @@ function create_div_in_DOM(div_id) {
    /* Create div element to hold the result
     If already existing, empty them
     */
-   if ($("#" + div_id).length !== 0) {
+   var div = $("#" + div_id);
+   if (div.length !== 0) {
       logWrite(DBG.TAG.WARNING, "html_text_to_DOM: already existing id. Was removed", div_id);
-      $("#" + div_id).remove();
+      div.remove();
    }
    $("body").append($("<div id='" + div_id + "'/>"));
 }

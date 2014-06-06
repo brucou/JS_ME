@@ -6,7 +6,7 @@ function getWordAtPoint(elem, x, y) {
     Known issues : Sometimes, the text read from the cursor position is several words. That happens on boundaries of the paragrpah box
     */
    if (elem.nodeType == elem.TEXT_NODE) {
-      var range = elem.ownerDocument.createRange();
+      range = elem.ownerDocument.createRange();
       range.selectNodeContents(elem);
       var currentPos = 0;
       var endPos = range.endOffset;
@@ -24,7 +24,7 @@ function getWordAtPoint(elem, x, y) {
       }
    } else {
       for (var i = 0; i < elem.childNodes.length; i++) {
-         var range = elem.childNodes[i].ownerDocument.createRange();
+         range = elem.childNodes[i].ownerDocument.createRange();
          range.selectNodeContents(elem.childNodes[i]);
          if (range.getBoundingClientRect().left <= x && range.getBoundingClientRect().right >= x &&
              range.getBoundingClientRect().top <= y && range.getBoundingClientRect().bottom >= y) {
@@ -67,3 +67,4 @@ function get_text_stats(text) {
    logExit("get_text_stats");
    return {sentence_number: sentence_number, avg_sentence_length: Math.round(word_number / sentence_number)};
 }
+
