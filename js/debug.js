@@ -6,9 +6,9 @@
 // nice to have changer tous les DBG_ en DBG.
 
 var DBG_INDENT_PREFIX = "";
-var DBG_INDENT_STRING = "--";
-var DBG_INDENT_STRING_LENGTH = DBG_INDENT_STRING.length;
-var DBG = {
+const DBG_INDENT_STRING = "--";
+const DBG_INDENT_STRING_LENGTH = DBG_INDENT_STRING.length;
+const DBG = {
    TAG : {TRACE: "Trace", INFO: "Info",
       ERROR    : "Error",
       WARNING  : "Warning",
@@ -24,9 +24,9 @@ var DBG = {
       NAME : ":: "}
 }
 
-var DBG_MAX_CHAR = 40;
-var DBG_CHAR_IN = ">";
-var DBG_CHAR_OUT = "<";
+const DBG_MAX_CHAR = 40;
+const DBG_CHAR_IN = ">";
+const DBG_CHAR_OUT = "<";
 
 function logEntry(context) {
    //context should be the function from which the logEntry is called
