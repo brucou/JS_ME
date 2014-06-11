@@ -26,7 +26,5 @@ var DS = DS || {
          return [this.$el.selector, this.tag, this.text.slice(0, 40), this.sentence_number, this.avg_sentence_length,
                  this.enclosing_div, "$$$"].join("\\");
       }
-   },
-   doSomething  : function () {
    }
 }
