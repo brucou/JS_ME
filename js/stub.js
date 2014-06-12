@@ -1,6 +1,8 @@
 /**
  * Created by bcouriol on 7/06/14.
  */
+
+/*
 function stub(url_param, url_log) {
    logEntry("stub");
    var my_url = $("#" + url_param + " option:selected").val();
@@ -16,3 +18,4 @@ $(function () {
    });
 });
 
+ */
