@@ -8,6 +8,24 @@ logWrite("INFO", "element", element.nodeType, element.tagName, $(this).attr("id"
          element.textContent.slice(0, 30), hierarchy[0] ? $(hierarchy[0]).attr("class") : "??");
    */
 
+/*
+ Unit Testing of utils
+var gre;
+// test isArray
+logWrite(DBG.TAG.DEBUG, "is Array []", isArray([]));
+logWrite(DBG.TAG.DEBUG, "is Array (null)", isArray(null));
+logWrite(DBG.TAG.DEBUG, "is Array (undefined)", isArray(gre));
+//OK!!
+
+var g = caching(function (x) {
+   return 2 * x;
+}, []);
+
+
+logWrite(DBG.TAG.DEBUG, "Testing with 2, 1, 10", g([2, 1, 10]));
+logWrite(DBG.TAG.DEBUG, "the same values second time and new one", g([2, 1, 10, 3]));
+ */
+
 function clean_up(html_text) {
    /*
     currently only removes the <head> tag

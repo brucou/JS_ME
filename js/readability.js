@@ -1,12 +1,13 @@
 /**
  * Created by bcouriol on 5/06/14.
  */
-   // todo: paragraghData.enclosing_div_id = $(hierarchy[0]).attr("id"); change it so that if undefined, it is set to "" //adjust the corresponding function make_selector_from_concat
+
    // issue: deal with the error when the page cannot be loaded (undefined)
    // issue: deal with lemonde, wrong counting of sentences because of bullet text, same deal with table tags (by taking the higher div?)
-   // todo: create all the content of div dest before appending it to DOM
+   // issue: deal with lemonde, some words give null when you click on it?? Seems to happen after anchor links : replace anchor links by span class and copy the style of links
+   // todo : disable click on links anyways
 
-define(['jquery', 'debug', 'data_struct', 'url_load'], function ($, DEBUG, DS, UL) {
+define(['jquery', 'debug', 'data_struct', 'url_load', 'utils'], function ($, DEBUG, DS, UL, UT) {
    const CLASS_SELECTOR_CHAR = ".";
    const ID_SELECTOR_CHAR = "#";
    const SOURCE = "source";
@@ -47,7 +48,7 @@ define(['jquery', 'debug', 'data_struct', 'url_load'], function ($, DEBUG, DS, U
        #avg #avg_xx > min number (language dependent)
        */
       var aDivRow = []; // contains stats for each div
-      var i = 0; // loop variable
+      var i; // loop variable
       for (i = 0; i < aData.length; i++) {
          var pdStatRow = aData[i]; //ParagraphData object
          var div = pdStatRow.enclosing_div;
@@ -78,7 +79,7 @@ define(['jquery', 'debug', 'data_struct', 'url_load'], function ($, DEBUG, DS, U
       /* Identify the div classes to keep in the DOM */
       var selectedDivs = [];
       for (i = 0; i < aDivRow.length; i++) {
-         var pdStatRowPartial = aDivRow[i]; //ParagraphData object
+         pdStatRowPartial = aDivRow[i]; //ParagraphData object
          if (pdStatRowPartial.sum_sentence_number >= MIN_SENTENCE_NUMBER &&
              pdStatRowPartial.avg_avg_sentence_length >= MIN_AVG_AVG_SENTENCE_LENGTH) {
             // that div is selected candidate for display
@@ -94,11 +95,12 @@ define(['jquery', 'debug', 'data_struct', 'url_load'], function ($, DEBUG, DS, U
        */
       wDest.append($("<div id='article' class='title'/>"));
       var wTitle = $("#article.title");
-      logWrite(DBG.TAG.DEBUG, $("title").text());
-      wTitle.text($("title").text());// praying that there is only 1 title on the page...
+      var $title=$("title");
+      logWrite(DBG.TAG.DEBUG, $title.text());
+      wTitle.text($title.text());// praying that there is only 1 title on the page...
 
       for (i = 0; i < selectedDivs.length; i++) {
-         var pdStatRowPartial = selectedDivs[i];
+          pdStatRowPartial = selectedDivs[i];
          var div_selector = pdStatRowPartial.div;
          if (div_selector.length === 0) { // this is pathological case, where the relevant text is directly under the body tag
             logWrite(DBG.TAG.WARNING, "div_selector is empty, ignoring");
@@ -158,7 +160,6 @@ define(['jquery', 'debug', 'data_struct', 'url_load'], function ($, DEBUG, DS, U
       return aData;
 
       function get_tag_stat(index, element) {
-         logEntry("get_tag_stat");
          var paragraghData = new DS.ParagraphData();
          switch (element.nodeType) {
             case 1:
@@ -193,7 +194,6 @@ define(['jquery', 'debug', 'data_struct', 'url_load'], function ($, DEBUG, DS, U
                //do nothing
                logWrite(DBG.TAG.WARNING, "do nothing");
          }
-         logExit("get_tag_stat");
       }
 
    }
@@ -207,17 +207,6 @@ define(['jquery', 'debug', 'data_struct', 'url_load'], function ($, DEBUG, DS, U
          }
       }
       return iIndex;
-   }
-
-   function html_text_to_DOM(html_text, div_id) {
-      /* insert the html_text into a DOM structure to have it parsed automatically */
-
-      /* Create a div element with id string_id
-       If already existing, remove them
-       */
-      logEntry("html_text_to_DOM");
-
-      logExit("html_text_to_DOM");
    }
 
    function create_div_in_DOM(div_id) {
@@ -245,7 +234,6 @@ define(['jquery', 'debug', 'data_struct', 'url_load'], function ($, DEBUG, DS, U
       make_article_readable          : make_article_readable,
       generateTagAnalysisData        : generateTagAnalysisData,
       getIndexInArray                : getIndexInArray,
-      html_text_to_DOM               : html_text_to_DOM,
       create_div_in_DOM              : create_div_in_DOM,
       activate_read_words_over       : activate_read_words_over
    }

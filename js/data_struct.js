@@ -27,6 +27,21 @@ define(function () {
             return [this.$el.selector, this.tag, this.text.slice(0, 40), this.sentence_number, this.avg_sentence_length,
                     this.enclosing_div, "$$$"].join("\\");
          }
+      },
+      ValueMap     : function ValueMap(init_object) {
+         /* Contains two fields, one input and one output
+          This data structure is designed to cache one function value as in output = f(input);
+          input and output can be any object.
+          However this data structure is isolated and named here to be able to reference it by typeof
+          for type checking
+          */
+         init_object = init_object || {};
+         this.x = init_object.x;
+         this.y = init_object.y;
+
+         this.toString = function () {
+            return "(" + [this.x, this.y].join(",") + ")";
+         }
       }
    }
 });
