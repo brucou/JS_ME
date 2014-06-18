@@ -233,8 +233,6 @@ define(['jquery', 'debug', 'data_struct', 'url_load', 'utils'], function ($, DEB
       extract_relevant_text_from_html: extract_relevant_text_from_html,
       make_article_readable          : make_article_readable,
       generateTagAnalysisData        : generateTagAnalysisData,
-      getIndexInArray                : getIndexInArray,
-      create_div_in_DOM              : create_div_in_DOM,
       activate_read_words_over       : activate_read_words_over
    }
 });
