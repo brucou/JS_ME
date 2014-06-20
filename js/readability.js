@@ -6,6 +6,7 @@
    // issue: deal with lemonde, wrong counting of sentences because of bullet text, same deal with table tags (by taking the higher div?)
    // issue: deal with lemonde, some words give null when you click on it?? Seems to happen after anchor links : replace anchor links by span class and copy the style of links
    // todo : disable click on links anyways
+   // nice to have : refactor to separate selector (display) from functionality?
 
 define(['jquery', 'debug', 'data_struct', 'url_load', 'utils'], function ($, DEBUG, DS, UL, UT) {
    const CLASS_SELECTOR_CHAR = ".";
@@ -95,12 +96,12 @@ define(['jquery', 'debug', 'data_struct', 'url_load', 'utils'], function ($, DEB
        */
       wDest.append($("<div id='article' class='title'/>"));
       var wTitle = $("#article.title");
-      var $title=$("title");
+      var $title = $("title");
       logWrite(DBG.TAG.DEBUG, $title.text());
       wTitle.text($title.text());// praying that there is only 1 title on the page...
 
       for (i = 0; i < selectedDivs.length; i++) {
-          pdStatRowPartial = selectedDivs[i];
+         pdStatRowPartial = selectedDivs[i];
          var div_selector = pdStatRowPartial.div;
          if (div_selector.length === 0) { // this is pathological case, where the relevant text is directly under the body tag
             logWrite(DBG.TAG.WARNING, "div_selector is empty, ignoring");
