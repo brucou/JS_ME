@@ -28,9 +28,10 @@ requirejs.config({
                     //never includes a ".js" extension since
                     //the paths config could be for a directory.
                     paths  : {
-                       jquery: 'vendor/jquery-1.10.2.min',
-                       css   : '../css',
-                       assets: '../assets'
+                       jquery  : 'vendor/jquery-1.10.2.min',
+                       css     : '../css',
+                       assets  : '../assets',
+                       socketio: '/socket.io/socket.io'
                     }
                  });
 
@@ -41,9 +42,14 @@ requirejs.config({
  to return the object)
  So we start the app here.
  */
-requirejs(['jquery', 'debug', 'readability'], function ($, DEBUG, RD) {
+
+var socket; //todo: remove from global from better encapsulation
+
+requirejs(['jquery', 'debug', 'readability', 'socketio'], function ($, DEBUG, RD, IO) {
 
    setDebugMode(DBG.TAG.DEBUG, true);
+
+   // testing socket.io
 
    function stub(url_param, url_log) {
       logEntry("stub");
@@ -55,6 +61,9 @@ requirejs(['jquery', 'debug', 'readability'], function ($, DEBUG, RD) {
    }
 
    $(function () {
+      socket = IO.connect();
+      console.log('socket connected');
+
       $("#url_param").change(function () {
          stub("url_param", "url");
       });

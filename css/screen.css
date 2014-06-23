@@ -357,3 +357,8 @@ tfoot {
 #url {
     font-size: 8px;
 }
+
+.highlight {
+    color: #0066FF;
+    font-family: 'Titillium Web', sans-serif;
+}

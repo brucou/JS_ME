@@ -8,7 +8,7 @@
    // todo : disable click on links anyways
    // nice to have : refactor to separate selector (display) from functionality?
 
-define(['jquery', 'debug', 'data_struct', 'url_load', 'utils'], function ($, DEBUG, DS, UL, UT) {
+define(['jquery', 'debug', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, DEBUG, DS, UL, UT, IO) {
    const CLASS_SELECTOR_CHAR = ".";
    const ID_SELECTOR_CHAR = "#";
    const SOURCE = "source";
@@ -123,6 +123,8 @@ define(['jquery', 'debug', 'data_struct', 'url_load', 'utils'], function ($, DEB
 
       /* clean the DOM tree used for calculating the statistics*/
       wDest.appendTo("body");
+
+      socket.emit('highlight_important_words', wDest.text());
 
       logExit("extract_relevant_text_from_html");
    }
