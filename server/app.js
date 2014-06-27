@@ -18,55 +18,96 @@
 // todo : connect with socket.io and receive a text file from client to return with important words
 // todo: add a debug systme
 
-var http = require('http');
-var express = require('express');
-var app = express();
+var http, express, app, io, server; // server connection variables
+var pg, client; // database connection variables
+const conString = "postgres://postgres:Italska184a@localhost/postgres"; // connection string
 const PREFIX_DIR_SERVER = '../server';
 const PREFIX_DIR_CLIENT = '..';
 
-// Set the view engine
-app.set('view engine', 'jade');
-// Where to find the view files
-app.set('views', PREFIX_DIR_SERVER + '/views');
+// session variables : initialized one time
+var qryImportantWords;
 
-app.use(express.static(PREFIX_DIR_CLIENT + ''));
+function initialize_server() {
+   http = require('http');
+   express = require('express');
+   app = express();
+   // Set the view engine
+   app.set('view engine', 'jade');
+   // Where to find the view files
+   app.set('views', PREFIX_DIR_SERVER + '/views');
 
-// A route for the home page - will render a view
-app.get('/', function (req, res) {
-   res.render('hello');
-});
+   app.use(express.static(PREFIX_DIR_CLIENT + ''));
 
-var server = require('http').createServer(app);
-var io = require('socket.io').listen(server);
-
-server.listen(3000, function () {
-   console.log('App started');
-});
-
-io.on('connection', function(socket){
-   console.log('Client connected');
-   socket.on('highlight_important_words', function(msg){
-      console.log('message: ' + msg);
+   // A route for the home page - will render a view
+   app.get('/', function (req, res) {
+      res.render('hello');
    });
-});
 
-var pg = require('pg');
-//or native libpq bindings
-//var pg = require('pg').native
+   server = require('http').createServer(app);
+   io = require('socket.io').listen(server);
 
-var conString = "postgres://postgres:Italska184a@localhost/postgres";
+   server.listen(3000, function () {
+      console.log('App started');
+   });
+}
 
-var client = new pg.Client(conString);
-client.connect(function (err) {
-   if (err) {
-      return console.error('could not connect to postgres', err);
-   }
-   client.query("select * from ts_debug('cs','Příliš žluťoučký kůň se napil žluté vody')", function (err, result) {
+function initialize_database() {
+   pg = require('pg');
+   client = new pg.Client(conString);
+   client.connect(function (err) {
       if (err) {
-         return console.error('error running query', err);
+         return console.error('could not connect to postgres', err);
       }
-      for (var i = 0; i < result.rows.length; i++) console.log(result.rows[i]);
-      //output: Tue Jan 15 2013 19:12:47 GMT-600 (CST)
-      client.end();
+      client.query("select string_agg(word, ' | ') as freq_words from pgWordFrequency where freq_cat = 'A';",
+                   function (err, result) {
+                      if (err) {
+                         return console.error('error running query', err);
+                      }
+                      qryImportantWords = result.rows[0].freq_words;
+                      //output: Tue Jan 15 2013 19:12:47 GMT-600 (CST)
+                   });
+   });
+}
+
+initialize_server();
+initialize_database();
+
+var rpc = require('rpc');
+var LOG = require('debug');
+var U = require ('utils');
+
+// initialize database connection and
+// one-time variable  linked to the database
+
+io.on('connect', function (socket) {
+   console.log('Client connected');
+   socket.on('highlight_important_words', function (msg) {
+      console.log('message received');
+      //var data = JSON.parse(JSON_msg);
+      //var msg = data.text;
+      //var callback = data.callback;
+      var expr = "select ts_headline('cs', '" + msg + "', to_tsquery('cs', '" + qryImportantWords +
+                 "'), 'StartSel=\"<span class = ''highlight''>\", StopSel=\"</span>\", HighlightAll=true') as highlit_text";
+
+      client.query(expr, function (err, result) {
+         if (err) {
+            LOG.write(LOG.TAG.ERROR, 'error running query', err);
+         }
+         //console.log('displaying result', result.rows[0].highlit_text);
+         socket.send(JSON.stringify({type: 'highlight_important_words', data: result.rows[0].highlit_text}));
+      });
    });
 });
+
+io.on('disconnect', function (socket) {
+   console.log('Client disconnected');
+   close_connection();
+});
+
+function print_rows(rows) {
+   for (var i = 0; i < result.rows.length; i++) console.log(result.rows[i]);
+}
+
+function close_connection() {
+   client.end();
+}

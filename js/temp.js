@@ -128,3 +128,15 @@ Příliš žluťoučký kůň se napil žluté vody
 select * from ts_debug('cs','Příliš žluťoučký kůň se napil žluté vody');
 SELECT ts_lexize('cspell','napil'); ->napit
  */
+
+/*
+ client.query("select string_agg(word, ' | ') as freq_words from pgWordFrequency where freq_cat = 'A';",
+ function (err, result) {
+ if (err) {
+ return console.error('error running query', err);
+ }
+ qryImportantWords = result.rows[0].freq_words;
+ console.log("qry: " + qryImportantWords);
+ //output: Tue Jan 15 2013 19:12:47 GMT-600 (CST)
+ });
+ */

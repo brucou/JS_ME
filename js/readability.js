@@ -125,6 +125,11 @@ define(['jquery', 'debug', 'data_struct', 'url_load', 'utils', 'socketio'], func
       wDest.appendTo("body");
 
       socket.emit('highlight_important_words', wDest.text());
+     // Here we need a callback to get the results from the server, and do something on the client
+      // that should be nicely encapsulated in a function. In the end this is a RPC
+      function parse_result (data) {
+         logWrite(DBG.TAG.INFO, "data: ", data);
+      }
 
       logExit("extract_relevant_text_from_html");
    }
