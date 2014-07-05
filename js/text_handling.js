@@ -49,10 +49,10 @@ function get_text_stats(text) {
     IMPROVEMENT : add a parameter for taking language into account
     LIMIT CASES : text="" -> {0,0}
     */
-   logEntry("get_text_stats");
+   //logEntry("get_text_stats");
    if (!text) {
       logWrite(DBG.TAG.ERROR, "invalid parameter text", text);
-      logExit("get_text_stats");
+      //logExit("get_text_stats");
    }
 
    // split by . which is not of the kind number followed by a . ->
@@ -64,6 +64,6 @@ function get_text_stats(text) {
       sentence_number = 1;
    }
    //logWrite(DBG.TAG.INFO, "Input & Output", text, sentence_number, word_number);
-   logExit("get_text_stats");
+   //logExit("get_text_stats");
    return {sentence_number: sentence_number, avg_sentence_length: Math.round(word_number / sentence_number)};
 }

@@ -81,6 +81,7 @@ define(['jquery', 'debug'],
                           success: function (res) {
                              var html_text = res.responseText;
                              // then you can manipulate your text as you wish
+                             // NOTE: the html is modified to be more correct (for instance <p> tags are added to table contents
                              callback(html_text);
                           }
                        });

@@ -18,11 +18,13 @@
 // todo : connect with socket.io and receive a text file from client to return with important words
 // todo: add a debug systme
 
-var http, express, app, io, server; // server connection variables
+var http, express, app, io, server, _; // server connection variables
 var pg, client; // database connection variables
 const conString = "postgres://postgres:Italska184a@localhost/postgres"; // connection string
 const PREFIX_DIR_SERVER = '../server';
 const PREFIX_DIR_CLIENT = '..';
+const pgVERBATIM = "$random_some$"; // !! if this is already in the text, there will be a problem
+// todo: randomize that constant
 
 // session variables : initialized one time
 var qryImportantWords;
@@ -69,33 +71,63 @@ function initialize_database() {
    });
 }
 
+function initialize_string_lib() {
+   _ = require('underscore');
+   // Import Underscore.string to separate object, because there are conflict functions (include, reverse, contains)
+   _.str = require('underscore.string');
+   // Mix in non-conflict functions to Underscore namespace if you want
+   _.mixin(_.str.exports());
+   // All functions, include conflict, will be available through _.str object
+   _.str.include('Underscore.string', 'string'); // => true
+}
+
 initialize_server();
 initialize_database();
+initialize_string_lib();
 
-var rpc = require('rpc');
+//var rpc = require('rpc'); // not needed anymore, can use callback parameter in emit function
 var LOG = require('debug');
-var U = require ('utils');
-
+var U = require('utils');
+const RPC_NAMESPACE = '/rpc';
 // initialize database connection and
 // one-time variable  linked to the database
 
-io.on('connect', function (socket) {
+io.of(RPC_NAMESPACE).on('connect', function (socket) {
    console.log('Client connected');
-   socket.on('highlight_important_words', function (msg) {
+
+   socket.on('highlight_important_words', function (msg, callback) {
       console.log('message received');
       //var data = JSON.parse(JSON_msg);
       //var msg = data.text;
       //var callback = data.callback;
-      var expr = "select ts_headline('cs', '" + msg + "', to_tsquery('cs', '" + qryImportantWords +
-                 "'), 'StartSel=\"<span class = ''highlight''>\", StopSel=\"</span>\", HighlightAll=true') as highlit_text";
 
-      client.query(expr, function (err, result) {
+      // todo - escaping query, and write a template mechanism similar to html templates client side
+      var queryString = "select ts_headline('cs', %s, to_tsquery('cs', '%s'), " +
+                        "'StartSel=\"<span class = ''highlight''>\", StopSel=\"</span>\", HighlightAll=true') " +
+                        "as highlit_text";
+      // I also need to escape the problematic characters in the string I am passing as argument
+      function pg_escape_string(string) {
+         return pgVERBATIM + string + pgVERBATIM;
+      }
+
+      var qryHighlightImportantWords = _.sprintf(queryString, pg_escape_string(msg), qryImportantWords);
+      LOG.write(LOG.TAG.INFO, 'running query with text', msg);
+
+      client.query(qryHighlightImportantWords, function (err, result) {
          if (err) {
             LOG.write(LOG.TAG.ERROR, 'error running query', err);
+            callback({data: err, error: true});
+            return;
          }
          //console.log('displaying result', result.rows[0].highlit_text);
-         socket.send(JSON.stringify({type: 'highlight_important_words', data: result.rows[0].highlit_text}));
+         //socket.send(JSON.stringify({type: 'highlight_important_words', data: result.rows[0].highlit_text}));
+         if (result && result.rows) { // just in case, but because err is catched, should not be necessary
+            LOG.write("callback results", result.rows[0].highlit_text);
+            callback({data: result.rows[0].highlit_text, error: false});
+
+         }
       });
+      LOG.write(LOG.TAG.INFO, 'query sent to server, waiting for callback');
    });
 });
 

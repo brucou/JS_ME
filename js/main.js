@@ -43,11 +43,10 @@ requirejs.config({
  So we start the app here.
  */
 
-var socket; //todo: remove from global from better encapsulation
+var main_socket, rpc_socket; //todo: remove from global from better encapsulation
+const RPC_NAMESPACE = '/rpc';
 
 requirejs(['jquery', 'debug', 'readability', 'socketio'], function ($, DEBUG, RD, IO) {
-
-   setDebugMode(DBG.TAG.DEBUG, true);
 
    // testing socket.io
 
@@ -61,7 +60,7 @@ requirejs(['jquery', 'debug', 'readability', 'socketio'], function ($, DEBUG, RD
    }
 
    $(function () {
-      socket = IO.connect();
+      rpc_socket = IO.connect(RPC_NAMESPACE);
       console.log('socket connected');
 
       $("#url_param").change(function () {

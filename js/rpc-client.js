@@ -1,11 +1,42 @@
 /**
  * Created by bcouriol on 27/06/14.
  */
-var U = require('utils');
+//!!!!! Deprecated!!!!
 
 /* Parameters:
  TIMEOUT : timeout after which the client will stop waiting for a result from remote function calls and activate the callback with a TIMEOUT error code
  */
+define(['utils', 'socketio'], function (UL, IO) {
+   function setTimeOut() {
+   }
+
+   function rpc() {
+      /*
+       rpc(name : function_name, param1, param2, ..., function : callback);
+       Minimum of two arguments : the remote function to call and the callback
+       Those two arguments are the first and the last
+
+       */
+      // nice to have: put error messags in constants
+      var iArgs = arguments.length;
+      const MIN_ARGS = 2;
+      if (iArgs < MIN_ARGS) {
+         logWrite(DBG.TAG.ERROR, "In rpc call", "wrong number of arguments");
+         return -1;
+      }
+      var function_name = arguments[0]; // first argument
+      var callback = arguments[iArgs - 1]; // last argument
+      if (UI.isString(function_name) && UI.isFunction(callback)) {
+         // let's proceed with packing up the remaining arguments if any
+         var args = Array.prototype.slice.call(arguments, 1, iArgs);
+
+      } else {
+         logWrite(DBG.TAG.ERROR, "In rpc call", "wrong type of arguments");
+         return -1;
+      }
+   }
+
+});
 
 function rpc() {
    /* Used by clients to call remote functions on server_side

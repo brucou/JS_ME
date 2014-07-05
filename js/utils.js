@@ -2,14 +2,13 @@
  * Created by bcouriol on 13/06/14.
  */
 
-// todo: verifier que la nouvelle fonction inspect fonctionne bien sans aucune reference restante a node.js (util)
+   // todo: verifier que la nouvelle fonction inspect fonctionne bien sans aucune reference restante a node.js (util)
 
 define(['data_struct'], function (DS) {
    Array.prototype.isItArray = true;
 
    function isArray(ar) {
-      return Array.isArray(ar) ||
-             (typeof ar === 'object' && objectToString(ar) === '[object Array]');
+      return Array.isArray(ar) || (typeof ar === 'object' && objectToString(ar) === '[object Array]');
    }
 
    function caching(f, initial_cache) {
@@ -123,8 +122,7 @@ define(['data_struct'], function (DS) {
       var style = inspect.styles[styleType];
 
       if (style) {
-         return '\u001b[' + inspect.colors[style][0] + 'm' + str +
-                '\u001b[' + inspect.colors[style][1] + 'm';
+         return '\u001b[' + inspect.colors[style][0] + 'm' + str + '\u001b[' + inspect.colors[style][1] + 'm';
       } else {
          return str;
       }
@@ -138,7 +136,7 @@ define(['data_struct'], function (DS) {
     * @param {Object} opts Optional options object that alters the output.
     */
    /* legacy: obj, showHidden, depth, colors
-   * The first required argument is the object, the second optional argument is
+    * The first required argument is the object, the second optional argument is
     whether to display the non-enumerable properties, the  third optional argument is the number of times the
     object is recursed (depth), and the fourth, also optional, is whether to style the output in ANSI colors.
     */
@@ -146,12 +144,16 @@ define(['data_struct'], function (DS) {
       // TAKEN FROM NODE
       // default options
       var ctx = {
-         seen: [],
+         seen   : [],
          stylize: stylizeNoColor
       };
       // legacy...
-      if (arguments.length >= 3) ctx.depth = arguments[2];
-      if (arguments.length >= 4) ctx.colors = arguments[3];
+      if (arguments.length >= 3) {
+         ctx.depth = arguments[2];
+      }
+      if (arguments.length >= 4) {
+         ctx.colors = arguments[3];
+      }
       if (typeof opts === 'boolean') {
          // legacy...
          ctx.showHidden = opts;
@@ -160,21 +162,30 @@ define(['data_struct'], function (DS) {
          exports._extend(ctx, opts);
       }
       // set default options
-      if (typeof ctx.showHidden === 'undefined') ctx.showHidden = false;
-      if (typeof ctx.depth === 'undefined') ctx.depth = 2;
-      if (typeof ctx.colors === 'undefined') ctx.colors = false;
-      if (typeof ctx.customInspect === 'undefined') ctx.customInspect = true;
-      if (ctx.colors) ctx.stylize = stylizeWithColor;
+      if (typeof ctx.showHidden === 'undefined') {
+         ctx.showHidden = false;
+      }
+      if (typeof ctx.depth === 'undefined') {
+         ctx.depth = 2;
+      }
+      if (typeof ctx.colors === 'undefined') {
+         ctx.colors = false;
+      }
+      if (typeof ctx.customInspect === 'undefined') {
+         ctx.customInspect = true;
+      }
+      if (ctx.colors) {
+         ctx.stylize = stylizeWithColor;
+      }
       return formatValue(ctx, obj, ctx.depth);
    }
 
    function formatValue(ctx, value, recurseTimes) {
       // Provide a hook for user-specified inspect functions.
       // Check that value is an object with an inspect function on it
-      if (ctx.customInspect && value && typeof value.inspect === 'function' &&
-             // Filter out the util module, it's inspect function is special
-          value.inspect !== exports.inspect &&
-         // Also filter out any prototype objects using the circular check.
+      if (ctx.customInspect && value &&
+          typeof value.inspect === 'function' && // Filter out the util module, it's inspect function is special
+          value.inspect !== exports.inspect && // Also filter out any prototype objects using the circular check.
           !(value.constructor && value.constructor.prototype === value)) {
          return String(value.inspect(recurseTimes));
       }
@@ -257,7 +268,7 @@ define(['data_struct'], function (DS) {
       if (array) {
          output = formatArray(ctx, value, recurseTimes, visibleKeys, keys);
       } else {
-         output = keys.map(function(key) {
+         output = keys.map(function (key) {
             return formatProperty(ctx, value, recurseTimes, visibleKeys, key, array);
          });
       }
@@ -270,7 +281,7 @@ define(['data_struct'], function (DS) {
    function arrayToHash(array) {
       var hash = {};
 
-      array.forEach(function(val, idx) {
+      array.forEach(function (val, idx) {
          hash[val] = true;
       });
 
@@ -279,6 +290,21 @@ define(['data_struct'], function (DS) {
 
    function isRegExp(re) {
       return typeof re === 'object' && objectToString(re) === '[object RegExp]';
+   }
+
+   function isFunction(object) {
+
+      return !!(object && typeof object.constructor !== "undefined" && typeof object.call !== "undefined" &&
+                typeof object.apply !== "undefined");
+
+      // return typeof obj === 'function' && toString.call(obj) == '[object Function]';
+      // this is a more precise version but slower
+   }
+
+   function isString(obj) {
+      return obj && (typeof teststring === "string");
+      // return obj && toString.call(obj) == '[object String]';
+      // this is a more precise version but slower
    }
 
    function isDate(d) {
@@ -295,9 +321,8 @@ define(['data_struct'], function (DS) {
             return ctx.stylize('undefined', 'undefined');
 
          case 'string':
-            var simple = '\'' + JSON.stringify(value).replace(/^"|"$/g, '')
-               .replace(/'/g, "\\'")
-               .replace(/\\"/g, '"') + '\'';
+            var simple = '\'' + JSON.stringify(value).replace(/^"|"$/g, '').replace(/'/g, "\\'").replace(/\\"/g, '"') +
+                         '\'';
             return ctx.stylize(simple, 'string');
 
          case 'number':
@@ -320,16 +345,14 @@ define(['data_struct'], function (DS) {
       var output = [];
       for (var i = 0, l = value.length; i < l; ++i) {
          if (hasOwnProperty(value, String(i))) {
-            output.push(formatProperty(ctx, value, recurseTimes, visibleKeys,
-                                       String(i), true));
+            output.push(formatProperty(ctx, value, recurseTimes, visibleKeys, String(i), true));
          } else {
             output.push('');
          }
       }
-      keys.forEach(function(key) {
+      keys.forEach(function (key) {
          if (!key.match(/^\d+$/)) {
-            output.push(formatProperty(ctx, value, recurseTimes, visibleKeys,
-                                       key, true));
+            output.push(formatProperty(ctx, value, recurseTimes, visibleKeys, key, true));
          }
       });
       return output;
@@ -361,11 +384,11 @@ define(['data_struct'], function (DS) {
             }
             if (str.indexOf('\n') > -1) {
                if (array) {
-                  str = str.split('\n').map(function(line) {
+                  str = str.split('\n').map(function (line) {
                      return '  ' + line;
                   }).join('\n').substr(2);
                } else {
-                  str = '\n' + str.split('\n').map(function(line) {
+                  str = '\n' + str.split('\n').map(function (line) {
                      return '   ' + line;
                   }).join('\n');
                }
@@ -383,9 +406,7 @@ define(['data_struct'], function (DS) {
             name = name.substr(1, name.length - 2);
             name = ctx.stylize(name, 'name');
          } else {
-            name = name.replace(/'/g, "\\'")
-               .replace(/\\"/g, '"')
-               .replace(/(^"|"$)/g, "'");
+            name = name.replace(/'/g, "\\'").replace(/\\"/g, '"').replace(/(^"|"$)/g, "'");
             name = ctx.stylize(name, 'string');
          }
       }
@@ -395,29 +416,28 @@ define(['data_struct'], function (DS) {
 
    function reduceToSingleString(output, base, braces) {
       var numLinesEst = 0;
-      var length = output.reduce(function(prev, cur) {
+      var length = output.reduce(function (prev, cur) {
          numLinesEst++;
-         if (cur.indexOf('\n') >= 0) numLinesEst++;
+         if (cur.indexOf('\n') >= 0) {
+            numLinesEst++;
+         }
          return prev + cur.length + 1;
       }, 0);
 
       if (length > 60) {
-         return braces[0] +
-                (base === '' ? '' : base + '\n ') +
-                ' ' +
-                output.join(',\n  ') +
-                ' ' +
-                braces[1];
+         return braces[0] + (base === '' ? '' : base + '\n ') + ' ' + output.join(',\n  ') + ' ' + braces[1];
       }
 
       return braces[0] + base + ' ' + output.join(', ') + ' ' + braces[1];
    }
 
+   function objectToString(o) {
+      return Object.prototype.toString.call(o);
+   }
+
    function timestamp() {
       var d = new Date();
-      var time = [pad(d.getHours()),
-                  pad(d.getMinutes()),
-                  pad(d.getSeconds())].join(':');
+      var time = [pad(d.getHours()), pad(d.getMinutes()), pad(d.getSeconds())].join(':');
       return [d.getDate(), months[d.getMonth()], time].join(' ');
    }
 
@@ -425,17 +445,19 @@ define(['data_struct'], function (DS) {
       ctor.super_ = superCtor;
       ctor.prototype = Object.create(superCtor.prototype, {
          constructor: {
-            value: ctor,
-            enumerable: false,
-            writable: true,
+            value       : ctor,
+            enumerable  : false,
+            writable    : true,
             configurable: true
          }
       });
    };
 
-   function _extend (origin, add) {
+   function _extend(origin, add) {
       // Don't do anything if add isn't an object
-      if (!add || typeof add !== 'object') return origin;
+      if (!add || typeof add !== 'object') {
+         return origin;
+      }
 
       var keys = Object.keys(add);
       var i = keys.length;
@@ -449,18 +471,73 @@ define(['data_struct'], function (DS) {
       return Object.prototype.hasOwnProperty.call(obj, prop);
    }
 
+   // definition of helper function format, similar to sprintf of C
+   // usage : String.format('{0} is dead, but {1} is alive! {0} {2}', 'ASP', 'ASP.NET');
+   // result : ASP is dead, but ASP.NET is alive! ASP {2}
+
+   if (!String.format) {
+      String.format = function(format) {
+         var args = Array.prototype.slice.call(arguments, 1);
+         return format.replace(/{(\d+)}/g, function(match, number) {
+            return typeof args[number] != 'undefined'
+               ? args[number]
+               : match
+               ;
+         });
+      };
+   }
+
+   /**
+    * Return a timestamp with the format "m/d/yy h:MM:ss TT"
+    * @type {Date}
+    */
+
+   function timeStamp() {
+      // Create a date object with the current time
+      var now = new Date();
+
+      // Create an array with the current month, day and time
+      var date = [ now.getMonth() + 1, now.getDate(), now.getFullYear() ];
+
+      // Create an array with the current hour, minute and second
+      var time = [ now.getHours(), now.getMinutes(), now.getSeconds() ];
+
+      // Determine AM or PM suffix based on the hour
+      var suffix = ( time[0] < 12 ) ? "AM" : "PM";
+
+      // Convert hour from military time
+      time[0] = ( time[0] < 12 ) ? time[0] : time[0] - 12;
+
+      // If hour is 0, set it to 12
+      time[0] = time[0] || 12;
+
+      // If seconds and minutes are less than 10, add a zero
+      for ( var i = 1; i < 3; i++ ) {
+         if ( time[i] < 10 ) {
+            time[i] = "0" + time[i];
+         }
+      }
+
+      // Return the formatted string
+      return date.join("/") + " " + time.join(":") + " " + suffix;
+   }
+
    return {
-      isArray   : isArray,
-      caching   : caching,
-      trimInput : trimInput,
-      isNotEmpty: isNotEmpty,
-      inspect : inspect,
-      isRegExp: isRegExp,
-      isDate: isDate,
-      isError: isError,
-      timestamp: timestamp,
-      inherits: inherits,
-      _extend: _extend,
-      hasOwnProperty: hasOwnProperty
+      isArray       : isArray,
+      caching       : caching,
+      trimInput     : trimInput,
+      isNotEmpty    : isNotEmpty,
+      inspect       : inspect,
+      isRegExp      : isRegExp,
+      isDate        : isDate,
+      isError       : isError,
+      timestamp     : timestamp,
+      inherits      : inherits,
+      _extend       : _extend,
+      hasOwnProperty: hasOwnProperty,
+      isString : isString,
+      isFunction : isFunction,
+      sPrintf: String.format,
+      timeStamp: timeStamp
    }
 });

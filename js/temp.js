@@ -140,3 +140,28 @@ SELECT ts_lexize('cspell','napil'); ->napit
  //output: Tue Jan 15 2013 19:12:47 GMT-600 (CST)
  });
  */
+function myFunction()
+{
+   var x=document.getElementById("demo");
+   x.innerHTML=x.tagName;
+   var x=$("p h1 h2 h3 h4 h5 h6");
+   $("body #demo").append($("<p>Test</p>"));
+   x.each(function get_tag_stat);
+}
+
+function get_tag_stat(index, element) {
+   switch (element.nodeType) {
+      case 1: //Represents an element
+         // look for nodename and do something
+         var tagName = element.tagName;
+         $(this).text(tagName);
+         $("body").append("test");
+         break;
+      case 3: //Represents textual content in an element or attribute
+         logWrite(DBG.TAG.WARNING, "text", element);
+         break;
+      default:
+         //do nothing
+         logWrite(DBG.TAG.WARNING, "do nothing");
+   }
+}
