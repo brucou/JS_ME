@@ -112,6 +112,7 @@ insert into aWordList (word)  values ('být');
 insert into aWordList (word)  values ('bylo');
 
 
+
    select to_tsvector('english', 'Obvinění z porušování příměří, které je součástí širšího mírového plánu, však přicházejí i z druhé strany. „Premiér“ proruské Doněcké lidové republiky Alexandr Borodaj na sobotní tiskové konferenci tvrdil, že ostřelování je východoukrajinského města Slavjansk ukrajinskými jednotkami pokračuje. Podobně se vyjádřil také proruský gubernátor Donbasu Pavel Gubarev.')
 @@ to_tsquery('english', 'a | se | v | na | je | že | s | z | o | do | to | i | k | ve | si | pro | za | by | ale | jsem | jako | po | V | tak | jsou | které | od | který | jeho | však | už | nebo | byl | jen | co | bude | aby | u | jak | až | A | než | má | jsme | ze | která | když | při | být | bylo
 ');
@@ -163,5 +164,23 @@ function get_tag_stat(index, element) {
       default:
          //do nothing
          logWrite(DBG.TAG.WARNING, "do nothing");
+   }
+}
+
+
+ function closure(variable_in_closure, async_callback) {
+ /* closure used to pass an extra variable for access in a callback function */
+return function (result) {
+   async_callback(variable_in_closure, result);
+};
+}
+
+function parse_result($el, result) {
+   if (!result.error) {
+      logWrite(DBG.TAG.DEBUG, "$el", $el.text());
+      $el.html(result.data);
+      $el.appendTo($dest);
+   } else {
+      logWrite(DBG.TAG.ERROR, "error message returned to callback", result.data);
    }
 }

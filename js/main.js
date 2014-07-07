@@ -60,8 +60,18 @@ requirejs(['jquery', 'debug', 'readability', 'socketio'], function ($, DEBUG, RD
    }
 
    $(function () {
+      setConfig(DBG.TAG.DEBUG, true, {by_default: true});
+      setConfig(DBG.TAG.TRACE, false, {by_default: false}); // default is don't show debug messages
+      setConfig(DBG.TAG.INFO, false, {by_default: false}); // default is don't show debug messages
+      disableLog(DBG.TAG.DEBUG, "CachedValues.init");
+      disableLog(DBG.TAG.DEBUG, "putValueInCache");
+      disableLog(DBG.TAG.DEBUG, "disaggregate_input");
+      disableLog(DBG.TAG.DEBUG, "async_cached_f");
+      enableLog(DBG.TAG.DEBUG, "propagateResult");
+      enableLog(DBG.TAG.DEBUG, "highlight_text");
+
       rpc_socket = IO.connect(RPC_NAMESPACE);
-      console.log('socket connected');
+      logWrite(DBG.TAG.INFO, 'rpc_socket', 'connected');
 
       $("#url_param").change(function () {
          stub("url_param", "url");

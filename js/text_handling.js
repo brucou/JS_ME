@@ -67,3 +67,21 @@ function get_text_stats(text) {
    //logExit("get_text_stats");
    return {sentence_number: sentence_number, avg_sentence_length: Math.round(word_number / sentence_number)};
 }
+
+function clean_text(sWords) {
+   return sWords.replace(/(\r\n|\n|\r)/gm, " ").replace(/\s+/g, ' ').trim();
+}
+
+function disaggregate_input(sWords) {
+   /* for now, just takes a string and returns an array of word tokens
+    Consecutive spaces are reduced to one
+    Trailing and leading spaces are taking out
+    That includes characters such as \n \r, etc. anything considered spaces by regexp
+    Tested on czech, french and english language characters
+    nice to have : do further testing of international language support
+    */
+   // temp: return clean_text(sWords).split(" ");
+   return sWords.replace(/[^\u00C0-\u1FFF\u2C00-\uD7FF\w\s]|_/g, function ($1) {
+      return ' ' + $1 + ' ';
+   }).replace(/\s+/g, ' ').trim().split(' ');
+}

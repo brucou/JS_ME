@@ -7,6 +7,8 @@
 define(['data_struct'], function (DS) {
    Array.prototype.isItArray = true;
 
+   var rePUNCT = /[ \,\.\$\uFFE5\^\+=`~<>{}\[\]|\u3000-\u303F!-#%-\x2A,-\/:;\x3F@\x5B-\x5D_\x7B}\u00A1\u00A7\u00AB\u00B6\u00B7\u00BB\u00BF\u037E\u0387\u055A-\u055F\u0589\u058A\u05BE\u05C0\u05C3\u05C6\u05F3\u05F4\u0609\u060A\u060C\u060D\u061B\u061E\u061F\u066A-\u066D\u06D4\u0700-\u070D\u07F7-\u07F9\u0830-\u083E\u085E\u0964\u0965\u0970\u0AF0\u0DF4\u0E4F\u0E5A\u0E5B\u0F04-\u0F12\u0F14\u0F3A-\u0F3D\u0F85\u0FD0-\u0FD4\u0FD9\u0FDA\u104A-\u104F\u10FB\u1360-\u1368\u1400\u166D\u166E\u169B\u169C\u16EB-\u16ED\u1735\u1736\u17D4-\u17D6\u17D8-\u17DA\u1800-\u180A\u1944\u1945\u1A1E\u1A1F\u1AA0-\u1AA6\u1AA8-\u1AAD\u1B5A-\u1B60\u1BFC-\u1BFF\u1C3B-\u1C3F\u1C7E\u1C7F\u1CC0-\u1CC7\u1CD3\u2010-\u2027\u2030-\u2043\u2045-\u2051\u2053-\u205E\u207D\u207E\u208D\u208E\u2329\u232A\u2768-\u2775\u27C5\u27C6\u27E6-\u27EF\u2983-\u2998\u29D8-\u29DB\u29FC\u29FD\u2CF9-\u2CFC\u2CFE\u2CFF\u2D70\u2E00-\u2E2E\u2E30-\u2E3B\u3001-\u3003\u3008-\u3011\u3014-\u301F\u3030\u303D\u30A0\u30FB\uA4FE\uA4FF\uA60D-\uA60F\uA673\uA67E\uA6F2-\uA6F7\uA874-\uA877\uA8CE\uA8CF\uA8F8-\uA8FA\uA92E\uA92F\uA95F\uA9C1-\uA9CD\uA9DE\uA9DF\uAA5C-\uAA5F\uAADE\uAADF\uAAF0\uAAF1\uABEB\uFD3E\uFD3F\uFE10-\uFE19\uFE30-\uFE52\uFE54-\uFE61\uFE63\uFE68\uFE6A\uFE6B\uFF01-\uFF03\uFF05-\uFF0A\uFF0C-\uFF0F\uFF1A\uFF1B\uFF1F\uFF20\uFF3B-\uFF3D\uFF3F\uFF5B\uFF5D\uFF5F-\uFF65]+/g;
+
    function isArray(ar) {
       return Array.isArray(ar) || (typeof ar === 'object' && objectToString(ar) === '[object Array]');
    }
@@ -97,6 +99,93 @@ define(['data_struct'], function (DS) {
       return cached_f;
    }
 
+   function async_cached(f, initialCache) {
+      /*
+       todo TO REWRITE!!!
+       Function who takes a function and returns an cached version of that function which memorized past computations
+       That function is also added some utilities function to empty, set and get its cache
+       f: the function to be cached. f takes an object and output another one
+       initial_cache : an array of valueMap object which are simply couples (x,y) where y=f(x)
+       NOTE: f: x -> y, but caching(f): [x] -> [y].
+       HYPOTHESIS : We suppose that it is more efficient to compute whole arrays of value
+       vs. sequentially computing single values
+       LIMITATION :
+       I don't think that's possible to create function inside this function, to empty,set or get cache, just recall the cached_f with an empty cache, but what about memory?
+       IMPROVEMENT : possibility to index the cache! But would make sense only for a large  set of value right? could use
+       a memory-based cache mechanish such as memcached (in-memory key-value store for small chunks of arbitrary data)?
+       or disk-based caching (localstorage)
+       KNOWN BUGS : sure inconsistency if the cache has one x and two y, e.g. if the mapping is not the one for a function
+       */
+
+      var cvCachedValues; // CachedValues is a Map array, it needs to be able to have property through CachedValues[prop] = value
+
+      if (initialCache && isArray(initialCache)) {
+         // give the possibility to initialize the cachedvalues cache object with an array, it is easier
+         cvCachedValues = new DS.CachedValues(initialCache);
+      } else if (!initialCache) {
+         logWrite(DBG.TAG.WARNING, "no cache passed in parameter, creating an empty one");
+         cvCachedValues = new DS.CachedValues([]); // null or wrong type passed as argument, so init with empty cache
+      } else {
+         cvCachedValues = initialCache; // if a cache is passed in parameter then use that one
+      }
+
+      var async_cached_f = function (value, OutputStore) {
+         var index = OutputStore.push(["Input value", value].join(": ")); // this is in order to "book" a place in the output array to minimize chances that a concurrent exec does not take it
+         // index points at the temporary value;
+
+         logEntry("async_cached_f");
+
+         var fvalue = null;
+         // todo: remove the special treatment of number or find another way to do it, this is specific to highlight_important_words
+         // todo : !! also applies to "", check that
+         //logWrite(DBG.TAG.DEBUG, "cvCachedValues", inspect(cvCachedValues));
+         var aValue = cvCachedValues.getValueFromCache(value);
+         var isInCache = !(typeof aValue.notInCache !== 'undefined');
+         if (isInCache) {
+            // value already cached, no callback, no execution, just assigning the value to the output array
+            logWrite(DBG.TAG.INFO, "Computation for value already in cache!", inspect(value), aValue);
+            updateOutputStore(OutputStore, index, aValue);
+            fvalue = aValue;
+         } else { // not in cache so cache it, except if it is a number
+            if (isNumberString(value)) {
+               logWrite(DBG.TAG.INFO, "Processing number or empty '' so leaving it intact!", value, value);
+               callback.apply(null, [false, {data: value}]);
+            } else {
+               fvalue = f(value, callback); // todo : can be complicated by adding a timeout in case there is never an answer
+               cvCachedValues.putValueInCache(value, fvalue);
+               logWrite(DBG.TAG.INFO, "New async computation, logging value immediately returned by func", value,
+                        fvalue);
+               OutputStore.setValueAt(index, OutputStore.getValueAt[index] + " | async call to f returns : " + fvalue);
+            }
+         }
+
+         logExit("async_cached_f");
+         return fvalue;
+
+         function updateOutputStore(osOutputStore, iIndex, aaValue) {
+            osOutputStore.setValueAt(iIndex, aaValue);
+            osOutputStore.invalidateAt(iIndex); // This is to propagate the change elsewhere who registered for an action to be taken
+         }
+
+         function callback(err, result) {// todo : error treatment!!!!
+            logEntry("callback");
+            if (!(err)) {
+               cvCachedValues.putValueInCache(value, result.data);
+            } else {
+               cvCachedValues.putValueInCache(value, null);
+            }
+            updateOutputStore(OutputStore, index, err || result.data);
+            logExit("callback");
+         }
+      };
+
+      async_cached_f.cache = cvCachedValues; // todo : seeing if it is possible to return the cache object for further modification
+      async_cached_f.f = f; // giving a way to return to the original uncached version of f)
+      f.async_cached_f = async_cached_f;
+
+      return async_cached_f;
+   }
+
    function trimInput(value) {
       return value.replace(/^\s*|\s*$/g, '');
    }
@@ -183,8 +272,7 @@ define(['data_struct'], function (DS) {
    function formatValue(ctx, value, recurseTimes) {
       // Provide a hook for user-specified inspect functions.
       // Check that value is an object with an inspect function on it
-      if (ctx.customInspect && value &&
-          typeof value.inspect === 'function' && // Filter out the util module, it's inspect function is special
+      if (ctx.customInspect && value && typeof value.inspect === 'function' && // Filter out the util module, it's inspect function is special
           value.inspect !== exports.inspect && // Also filter out any prototype objects using the circular check.
           !(value.constructor && value.constructor.prototype === value)) {
          return String(value.inspect(recurseTimes));
@@ -305,6 +393,16 @@ define(['data_struct'], function (DS) {
       return obj && (typeof teststring === "string");
       // return obj && toString.call(obj) == '[object String]';
       // this is a more precise version but slower
+   }
+
+   function isPunct(char) {
+      // return true if the character char is a punctuation sign
+      // nice to have: improve to adjust list of punctuation by language
+      if (char.length > 1) {
+         return null;
+      } else {
+         return (rePUNCT.exec(char));
+      }
    }
 
    function isDate(d) {
@@ -476,13 +574,10 @@ define(['data_struct'], function (DS) {
    // result : ASP is dead, but ASP.NET is alive! ASP {2}
 
    if (!String.format) {
-      String.format = function(format) {
+      String.format = function (format) {
          var args = Array.prototype.slice.call(arguments, 1);
-         return format.replace(/{(\d+)}/g, function(match, number) {
-            return typeof args[number] != 'undefined'
-               ? args[number]
-               : match
-               ;
+         return format.replace(/{(\d+)}/g, function (match, number) {
+            return typeof args[number] != 'undefined' ? args[number] : match;
          });
       };
    }
@@ -491,7 +586,6 @@ define(['data_struct'], function (DS) {
     * Return a timestamp with the format "m/d/yy h:MM:ss TT"
     * @type {Date}
     */
-
    function timeStamp() {
       // Create a date object with the current time
       var now = new Date();
@@ -512,14 +606,18 @@ define(['data_struct'], function (DS) {
       time[0] = time[0] || 12;
 
       // If seconds and minutes are less than 10, add a zero
-      for ( var i = 1; i < 3; i++ ) {
-         if ( time[i] < 10 ) {
+      for (var i = 1; i < 3; i++) {
+         if (time[i] < 10) {
             time[i] = "0" + time[i];
          }
       }
 
       // Return the formatted string
       return date.join("/") + " " + time.join(":") + " " + suffix;
+   }
+
+   function isNumberString(text) {
+      return !isNaN(text);
    }
 
    return {
@@ -535,9 +633,12 @@ define(['data_struct'], function (DS) {
       inherits      : inherits,
       _extend       : _extend,
       hasOwnProperty: hasOwnProperty,
-      isString : isString,
-      isFunction : isFunction,
-      sPrintf: String.format,
-      timeStamp: timeStamp
+      isString      : isString,
+      isPunct       : isPunct,
+      isFunction    : isFunction,
+      sPrintf       : String.format,
+      timeStamp     : timeStamp,
+      isNumberString: isNumberString,
+      async_cached  : async_cached
    }
 });

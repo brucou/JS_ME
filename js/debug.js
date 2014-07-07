@@ -127,7 +127,6 @@ function logForceWrite(tag, text, arg) {
  * Return a timestamp with the format "m/d/yy h:MM:ss TT"
  * @type {Date}
  */
-
 function timeStamp() {
    // Create a date object with the current time
    var now = new Date();

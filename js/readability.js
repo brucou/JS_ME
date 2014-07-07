@@ -6,14 +6,30 @@
    // issue: deal with lemonde, wrong counting of sentences because of bullet text, same deal with table tags (by taking the higher div?)
    // issue: deal with lemonde, some words give null when you click on it?? Seems to happen after anchor links : replace anchor links by span class and copy the style of links
    // todo : disable click on links anyways
-   // todo: readd the treatment of title
    // nice to have : refactor to separate selector (display) from functionality?
+   // todo: !!test how the callback works in case of error in query on server
+   // issue todo: solve problem of punctuation sign who are shown with an extra space
+   // issue: don't send punctuation signs also to server
+   // done: hid the source div DOM to accelerate display
+   // issue: analyse why some paragraphs are not parsed : http://prazsky.denik.cz/zpravy_region/lenka-mrazova-dokonalost-je-moje-hodnota-20140627.html
+   // issue: analyze why not centered : http://ekonomika.idnes.cz/shaangu-koupe-ekol-0no-/ekonomika.aspx?c=A140704_215639_ekonomika_maq
+   // todo : change query to return frequency number of word, that can be done in one single query with all the text, then put back per word
 
 define(['jquery', 'debug', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, DEBUG, DS, UL, UT, IO) {
    const CLASS_SELECTOR_CHAR = ".";
    const ID_SELECTOR_CHAR = "#";
    const SOURCE = "source";
    const DEST = "destination";
+
+   function srv_qry_important_words(word, callback) {
+      /*
+       Word: the word to question the server with
+       callback: executed when the server has finished its processing
+       */
+      rpc_socket.emit('highlight_important_words', word, callback);
+   }
+
+   var cached_highlight = UT.async_cached(srv_qry_important_words, new DS.CachedValues([])); // no initial cache
 
    function make_article_readable(your_url, then_callback) {
       UL.url_load(your_url, function (html_text) {
@@ -28,6 +44,12 @@ define(['jquery', 'debug', 'data_struct', 'url_load', 'utils', 'socketio'], func
        This case is currently considered pathological and ignored
        IMPROVEMENT : look if there is an article tag, in which case take the title and add it first with H1 tag before constructing the page
        */
+      /*
+       only for test
+       */
+      /*html_text =
+       '<p> S odkazem na sdělení čínské firmy to v pátek uvedla agentura Reuters. This is in order to have a minimum of five paragraphs. The bad thing is I need to have at least five paragraphs to be selected. So here are two in English and one in czech, with enough words to have a high average and be selected. propertyIsEnumerable Je ochotna za něj zaplatit 1,34 miliardy korun.  </p>';
+       */
       logEntry("extract_relevant_text_from_html");
       const TEXT_SELECTORS_FILTER = ["p", "h1", "h2", "h3", "h4", "h5", "h6"].join(", ");
       const TABLE_SELECTORS = ["th", "td"].join(", ");
@@ -36,11 +58,13 @@ define(['jquery', 'debug', 'data_struct', 'url_load', 'utils', 'socketio'], func
       const TEXT_SELECTORS = [TEXT_SELECTORS_FILTER, LIST_SELECTORS].join(", ");
       const DIV_SELECTORS = "div"; //took off the article under div, otherwise wikipedia does not pass
       //const DIV_SELECTORS = ["div"];
-      const MIN_SENTENCE_NUMBER = 6;
+      const MIN_SENTENCE_NUMBER = 5;
       const MIN_AVG_AVG_SENTENCE_LENGTH = 10;
 
       //logWrite(DBG.TAG.DEBUG, "html_text", html_text);
       var $source = create_div_in_DOM(SOURCE).html(html_text);
+      $source.hide();
+      $source.appendTo($("body"));
       var $dest = create_div_in_DOM(DEST);
       //var aData = generateTagAnalysisData($source, [DIV_SELECTORS, TEXT_SELECTORS].join(", "));
       var aData = generateTagAnalysisData($source, TEXT_SELECTORS, TABLE_SELECTORS);
@@ -55,7 +79,7 @@ define(['jquery', 'debug', 'data_struct', 'url_load', 'utils', 'socketio'], func
        #avg #avg_xx > min number (language dependent)
        */
       /* A1.
-      First compute the tag and text stats grouped by div
+       First compute the tag and text stats grouped by div
        */
       logWrite(DBG.TAG.INFO, "First compute the tag and text stats grouped by div");
       var aDivRow = []; // contains stats for each div
@@ -114,6 +138,7 @@ define(['jquery', 'debug', 'data_struct', 'url_load', 'utils', 'socketio'], func
       var $title = $("title", $source);
       $dTitle.text($title.text());// praying that there is only 1 title on the page...
 
+      logWrite(DBG.TAG.INFO, "Highlighting important words");
       for (i = 0; i < selectedDivs.length; i++) {
          pdStatRowPartial = selectedDivs[i];
          var div_selector = pdStatRowPartial.div;
@@ -122,46 +147,15 @@ define(['jquery', 'debug', 'data_struct', 'url_load', 'utils', 'socketio'], func
             continue;
          }
 
-         function closure(variable_in_closure, async_callback) {
-            /* closure used to pass an extra variable for access in a callback function */
-            return function (result) {
-               async_callback(variable_in_closure, result);
-            };
-         }
-
-         function parse_result($el, result) {
-            if (!result.error) {
-               logWrite(DBG.TAG.DEBUG, "$el", $el.text());
-               $el.html(result.data);
-               $el.appendTo($dest);
-            } else {
-               logWrite(DBG.TAG.ERROR, "error message returned to callback", result.data);
-            }
-         }
-
          logWrite(DBG.TAG.INFO, "Highlighting important words on text from", div_selector);
 
          //$dest.append($(TEXT_SELECTORS, $(div_selector, $source)));
-         var plain_text;
-         $(TEXT_SELECTORS, $(div_selector, $source)).map(function () {
-            plain_text = $(this).text();
-            if (plain_text && plain_text.length > 0) {
-               logWrite(DBG.TAG.INFO, "sending to server for highlighting :", plain_text);
-               rpc_socket.emit('highlight_important_words', plain_text, closure($(this), parse_result));
-            } else {
-               logWrite(DBG.TAG.WARNING, "no text to lexically analyze");
-            }
-            //logWrite(DBG.TAG.DEBUG, "text_selector",  $(this).text());
-         });
-         /*
-          NOTE : Another option si $dest.append($(div_selector));
-          This allows to keep some extra information included in other child divs
-          Also, one can add more selectors than TEXT_SELECTORS to include more things (image, tables, videos, etc.)
-          */
-         /*
-          NOTE : maybe I should also in that case remove the div that have been recognized as non pertinent
-          for instance, low avg_avg_sentence_length and high sum_sentence_number
-          */
+         // change this by calling new functions on a div
+         //$body = $("body", $source);
+         var $div_selector = $(div_selector);
+         highlight_text($div_selector, TEXT_SELECTORS); //null : use current cache
+         $div_selector.appendTo($dest);
+
       }
 
       /* clean the DOM tree used for calculating the statistics*/
@@ -175,10 +169,60 @@ define(['jquery', 'debug', 'data_struct', 'url_load', 'utils', 'socketio'], func
       // Here we need a callback to get the results from the server, and do something on the client
       // that should be nicely encapsulated in a function. In the end this is a RPC
 
+      $source.remove();
       $dest.appendTo("body");
 
-
       logExit("extract_relevant_text_from_html");
+   }
+
+   function highlight_proper_text(sWords, $el) {
+      /*
+       sWords : sentence whose words are to be highlit
+       $el : jQuery element that contains sWords in its inner text
+       cvCache : cache object that keeps a memory of already processed words
+       srv_query : the query executed on the server that returns information on the importance of the word
+       */
+      logEntry("highlight_proper_text");
+      var aInput = disaggregate_input(sWords);
+      var osStore = new DS.OutputStore();
+      osStore.countDown = aInput.length;
+      osStore.propagateResult = function () {
+         logEntry("propagateResult");
+         $el.html(osStore.toString());
+         logExit("propagateResult");
+      };
+      aInput.map(function (element) {
+         cached_highlight(element, osStore);
+      }); //ojo it needs to apply the map function in order!!
+      logExit("highlight_proper_text");
+   }
+
+   function highlight_text($el, TEXT_SELECTORS) {
+      logEntry("highlight_text");
+
+      $("script", $el).remove();
+      $("head", $el).remove();
+      // text_selectors cannot have SPAN inside, otherwise it will recurse infinitely
+      // Wrap a span tag around text nodes for easier modification
+      $(TEXT_SELECTORS, $el).contents().filter(function () {
+         // filter all the noise of spaces that are converted to Node_text elements
+         //todo : remove the this.nodeType!==1 redundant with the 3 put TEXT_NODE instead of 3
+         return (this.nodeType !== 1) && (this.nodeType === 3) && (clean_text(this.textContent).length > 0);
+      }).wrap("<span></span>").end().filter("br").remove(); //todo : test on a text with br elements (old web pages)
+
+      var length = $el.children().length;
+      if (length == 0) {
+         logWrite(DBG.TAG.DEBUG, "processing element without child", $el.tagName, $el.text());
+         highlight_proper_text($el.text(), $el);
+      } else {
+         // go through recursively into the children
+         logWrite(DBG.TAG.DEBUG, "", "tag", $el.get(0).tagName, "has ", length, "children", "processing them");
+
+         $el.children().each(function () {
+            highlight_text($(this), TEXT_SELECTORS);
+         });
+      }
+      logExit("highlight_text");
    }
 
    function generateTagAnalysisData($source, tagHTML, TABLE_SELECTORS) {
@@ -217,7 +261,7 @@ define(['jquery', 'debug', 'data_struct', 'url_load', 'utils', 'socketio'], func
       logExit("generateTagAnalysisData");
       return aData;
 
-      function show(index, element){
+      function show(index, element) {
          logWrite(DBG.TAG.DEBUG, "element read", element.tagName, element.id, element.textContent);
       }
 
@@ -233,11 +277,13 @@ define(['jquery', 'debug', 'data_struct', 'url_load', 'utils', 'socketio'], func
                   //logWrite(DBG.TAG.DEBUG, "element read", tagName, element.id, element.textContent);
                   //logWrite(DBG.TAG.DEBUG, "element parent", parentTagName);
 
-                  var isTableContent = parentTagName.search("T")? "false": "true";
-                                                            //TABLE_SELECTORS.split(" ").join("|"));
+                  var isTableContent = parentTagName.search("T") ? "false" : "true";
+                  //TABLE_SELECTORS.split(" ").join("|"));
                   //logWrite(DBG.TAG.DEBUG, "is a table element?", isTableContent);
 
-                  if (isTableContent==="true") break;
+                  if (isTableContent === "true") {
+                     break;
+                  }
                   var hierarchy = $(this).parentsUntil("body", "div") || [$("body")]; //!! to test! if no div enclosing, then body is used
                   var div = $(hierarchy[0]); // By construction can't be null right?
 
@@ -287,10 +333,10 @@ define(['jquery', 'debug', 'data_struct', 'url_load', 'utils', 'socketio'], func
       var $div = $("#" + div_id);
       if ($div.length !== 0) {
          logWrite(DBG.TAG.WARNING, "html_text_to_DOM: already existing id. Was emptied", div_id);
-         $div.empty();
-      } else {
-         $div = $("<div id='" + div_id + "'/>");
+         $div.remove();
       }
+
+      $div = $("<div id='" + div_id + "'/>");
       return $div;
    }
 
@@ -307,3 +353,4 @@ define(['jquery', 'debug', 'data_struct', 'url_load', 'utils', 'socketio'], func
       activate_read_words_over       : activate_read_words_over
    }
 });
+

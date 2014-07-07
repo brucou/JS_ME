@@ -89,6 +89,15 @@ initialize_string_lib();
 var LOG = require('debug');
 var U = require('utils');
 const RPC_NAMESPACE = '/rpc';
+
+function wrap_string(wrap_begin, word, wrap_end) {
+   return [wrap_begin, word, wrap_end].join("");
+}
+
+function wrap_highlight_span(word) {
+   return wrap_string("<span class = 'highlight'>", word, "</span>");
+}
+
 // initialize database connection and
 // one-time variable  linked to the database
 
@@ -100,31 +109,45 @@ io.of(RPC_NAMESPACE).on('connect', function (socket) {
       //var data = JSON.parse(JSON_msg);
       //var msg = data.text;
       //var callback = data.callback;
+      // todo: remove the sprintf to use tje $1, $2 who protects again sql injuntion
+      //cf. https://github.com/brianc/node-postgres/wiki/Client#method-query-parameterized
 
       // todo - escaping query, and write a template mechanism similar to html templates client side
-      var queryString = "select ts_headline('cs', %s, to_tsquery('cs', '%s'), " +
-                        "'StartSel=\"<span class = ''highlight''>\", StopSel=\"</span>\", HighlightAll=true') " +
-                        "as highlit_text";
+      var pgTable_WordFrequency = "pgwordfrequency";
+      var queryHighlightImportantWords = "select ts_headline('cs', %s, to_tsquery('cs', '%s'), " +
+                                         "'StartSel=\"<span class = ''highlight''>\", StopSel=\"</span>\", HighlightAll=true') " +
+                                         "as highlit_text"; //important the first %s has no quotes
+
+      var queryIsOneWordImportant = "select to_tsvector('cs', '%s') @@ to_tsquery('cs', '%s') as highlit_text";
+      var queryFrequencyWords = "select word, frequency from " + pgTable_WordFrequency + " where ";
+      var queryString = queryIsOneWordImportant; // we go with that one now
       // I also need to escape the problematic characters in the string I am passing as argument
       function pg_escape_string(string) {
          return pgVERBATIM + string + pgVERBATIM;
       }
 
-      var qryHighlightImportantWords = _.sprintf(queryString, pg_escape_string(msg), qryImportantWords);
+      var qryHighlightImportantWords = _.sprintf(queryString, msg, qryImportantWords);
       LOG.write(LOG.TAG.INFO, 'running query with text', msg);
 
       client.query(qryHighlightImportantWords, function (err, result) {
          if (err) {
             LOG.write(LOG.TAG.ERROR, 'error running query', err);
-            callback({data: err, error: true});
+            callback(true, {data: null, error: err});
             return;
          }
          //console.log('displaying result', result.rows[0].highlit_text);
          //socket.send(JSON.stringify({type: 'highlight_important_words', data: result.rows[0].highlit_text}));
-         if (result && result.rows) { // just in case, but because err is catched, should not be necessary
+         if (result && result.rows) {
+            var highlit_text = result.rows[0].highlit_text;
             LOG.write("callback results", result.rows[0].highlit_text);
-            callback({data: result.rows[0].highlit_text, error: false});
-
+            if ("true" === highlit_text.toString()) {
+               LOG.write("Word is an important word", wrap_highlight_span(msg));
+               callback(false, {data: wrap_highlight_span(msg), error: false}); // no err, and important word
+            } else {
+               LOG.write("Word is not an important word", msg);
+               callback(false, {data: msg, error: false}); // no err, and not an important word
+            }
+            // just in case, but because err is catched, should not be necessary
          }
       });
       LOG.write(LOG.TAG.INFO, 'query sent to server, waiting for callback');
