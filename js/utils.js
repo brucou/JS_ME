@@ -103,18 +103,18 @@ define(['data_struct'], function (DS) {
       /*
        todo TO REWRITE!!!
        Function who takes a function and returns an cached version of that function which memorized past computations
-       That function is also added some utilities function to empty, set and get its cache
-       f: the function to be cached. f takes an object and output another one
+       if bool_cached is set, then the function is memoized to remember previous computations. To use only when it makes sense
+       as there is no mechanism yet to remove value from the cache. Hence the cache only grows with each call. That
+       can lead to some memory problems in the current implementation
+       if bool_cached is not set, then the asynchronous function is called, result values are set in the callback
+       The OutputStore functionality equals to that of a stream. Each character arrival (value) provokes
+       a read action (function call), when the end is reached (countDown) the gathered charactered are passed to a function
+       (propagateResult)
+       f: the function to be applied. f takes an object and output another one
        initial_cache : an array of valueMap object which are simply couples (x,y) where y=f(x)
        NOTE: f: x -> y, but caching(f): [x] -> [y].
-       HYPOTHESIS : We suppose that it is more efficient to compute whole arrays of value
-       vs. sequentially computing single values
-       LIMITATION :
-       I don't think that's possible to create function inside this function, to empty,set or get cache, just recall the cached_f with an empty cache, but what about memory?
-       IMPROVEMENT : possibility to index the cache! But would make sense only for a large  set of value right? could use
-       a memory-based cache mechanish such as memcached (in-memory key-value store for small chunks of arbitrary data)?
-       or disk-based caching (localstorage)
-       KNOWN BUGS : sure inconsistency if the cache has one x and two y, e.g. if the mapping is not the one for a function
+       IMPROVEMENT : possibility to index the cache! But would make sense only for a large  set of value right?
+       right, I am using the in-house javascript property mechanism as a native substitute for a hash-mapped cache
        */
 
       var cvCachedValues; // CachedValues is a Map array, it needs to be able to have property through CachedValues[prop] = value
@@ -122,14 +122,15 @@ define(['data_struct'], function (DS) {
       if (initialCache && isArray(initialCache)) {
          // give the possibility to initialize the cachedvalues cache object with an array, it is easier
          cvCachedValues = new DS.CachedValues(initialCache);
-      } else if (!initialCache) {
-         logWrite(DBG.TAG.WARNING, "no cache passed in parameter, creating an empty one");
-         cvCachedValues = new DS.CachedValues([]); // null or wrong type passed as argument, so init with empty cache
+      } else if (!initialCache) {//no cache passed as parameter
+         logWrite(DBG.TAG.INFO, "async function will not be cached");
       } else {
          cvCachedValues = initialCache; // if a cache is passed in parameter then use that one
       }
 
       var async_cached_f = function (value, OutputStore) {
+         // could be refactored to separate functionality of OutputStore which is that of a stream buffer
+         // it piles on values till a trigger (similar to "end" of stream) is detected, then a callback ensues
          var index = OutputStore.push(["Input value", value].join(": ")); // this is in order to "book" a place in the output array to minimize chances that a concurrent exec does not take it
          // index points at the temporary value;
 
@@ -139,28 +140,36 @@ define(['data_struct'], function (DS) {
          // todo: remove the special treatment of number or find another way to do it, this is specific to highlight_important_words
          // todo : !! also applies to "", check that
          //logWrite(DBG.TAG.DEBUG, "cvCachedValues", inspect(cvCachedValues));
-         var aValue = cvCachedValues.getValueFromCache(value);
-         var isInCache = !(typeof aValue.notInCache !== 'undefined');
-         if (isInCache) {
-            // value already cached, no callback, no execution, just assigning the value to the output array
-            logWrite(DBG.TAG.INFO, "Computation for value already in cache!", inspect(value), aValue);
-            updateOutputStore(OutputStore, index, aValue);
-            fvalue = aValue;
-         } else { // not in cache so cache it, except if it is a number
-            if (isNumberString(value)) {
-               logWrite(DBG.TAG.INFO, "Processing number or empty '' so leaving it intact!", value, value);
-               callback.apply(null, [false, {data: value}]);
-            } else {
-               fvalue = f(value, callback); // todo : can be complicated by adding a timeout in case there is never an answer
-               cvCachedValues.putValueInCache(value, fvalue);
-               logWrite(DBG.TAG.INFO, "New async computation, logging value immediately returned by func", value,
-                        fvalue);
-               OutputStore.setValueAt(index, OutputStore.getValueAt[index] + " | async call to f returns : " + fvalue);
+         if (cvCachedValues) { // if function is cached
+            var aValue = cvCachedValues.getValueFromCache(value);
+            var isInCache = !(typeof aValue.notInCache !== 'undefined');
+            if (isInCache) {
+               // value already cached, no callback, no execution, just assigning the value to the output array
+               logWrite(DBG.TAG.INFO, "Computation for value already in cache!", inspect(value), aValue);
+               updateOutputStore(OutputStore, index, aValue);
+               fvalue = aValue;
+            } else { // not in cache so cache it, except if it is a number
+               if (isNumberString(value)) {
+                  logWrite(DBG.TAG.INFO, "Processing number or empty '' so leaving it intact!", value, value);
+                  callback.apply(null, [false, {data: value}]);
+               } else {
+                  exec_f();
+                  cvCachedValues.putValueInCache(value, fvalue);
+               }
             }
+         } else {// if function is not cached
+            logWrite(DBG.TAG.INFO, "function is not cached so just executing it");
+            exec_f();
          }
 
          logExit("async_cached_f");
          return fvalue;
+
+         function exec_f() {
+            fvalue = f(value, callback);
+            OutputStore.setValueAt(index, OutputStore.getValueAt[index] + " | async call to f returns : " + fvalue);
+            logWrite(DBG.TAG.INFO, "New async computation, logging value immediately returned by func", value, fvalue);
+         }
 
          function updateOutputStore(osOutputStore, iIndex, aaValue) {
             osOutputStore.setValueAt(iIndex, aaValue);
@@ -169,10 +178,15 @@ define(['data_struct'], function (DS) {
 
          function callback(err, result) {// todo : error treatment!!!!
             logEntry("callback");
-            if (!(err)) {
-               cvCachedValues.putValueInCache(value, result.data);
-            } else {
-               cvCachedValues.putValueInCache(value, null);
+            if (cvCachedValues) {
+               if (!(err)) {
+                  cvCachedValues.putValueInCache(value, result.data);
+               } else {
+                  cvCachedValues.putValueInCache(value, null);
+               }
+            }
+            if (err) {
+               logWrite(DBG.TAG.ERROR, "error while executing query on server", err);
             }
             updateOutputStore(OutputStore, index, err || result.data);
             logExit("callback");
@@ -617,6 +631,7 @@ define(['data_struct'], function (DS) {
    }
 
    function isNumberString(text) {
+      // issue: isNaN recognizes english formatting of numbers only
       return !isNaN(text);
    }
 

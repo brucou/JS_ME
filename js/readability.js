@@ -3,17 +3,13 @@
  */
 
    // issue: deal with the error when the page cannot be loaded (undefined)
-   // issue: deal with lemonde, wrong counting of sentences because of bullet text, same deal with table tags (by taking the higher div?)
    // issue: deal with lemonde, some words give null when you click on it?? Seems to happen after anchor links : replace anchor links by span class and copy the style of links
-   // todo : disable click on links anyways
+   // todo : disable click on links anyways - interacts with word info functionality
    // nice to have : refactor to separate selector (display) from functionality?
    // todo: !!test how the callback works in case of error in query on server
-   // issue todo: solve problem of punctuation sign who are shown with an extra space
-   // issue: don't send punctuation signs also to server
    // done: hid the source div DOM to accelerate display
    // issue: analyse why some paragraphs are not parsed : http://prazsky.denik.cz/zpravy_region/lenka-mrazova-dokonalost-je-moje-hodnota-20140627.html
-   // issue: analyze why not centered : http://ekonomika.idnes.cz/shaangu-koupe-ekol-0no-/ekonomika.aspx?c=A140704_215639_ekonomika_maq
-   // todo : change query to return frequency number of word, that can be done in one single query with all the text, then put back per word
+// issue: lecourrierinternational what is happening?
 
 define(['jquery', 'debug', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, DEBUG, DS, UL, UT, IO) {
    const CLASS_SELECTOR_CHAR = ".";
@@ -29,7 +25,8 @@ define(['jquery', 'debug', 'data_struct', 'url_load', 'utils', 'socketio'], func
       rpc_socket.emit('highlight_important_words', word, callback);
    }
 
-   var cached_highlight = UT.async_cached(srv_qry_important_words, new DS.CachedValues([])); // no initial cache
+   //var cached_highlight = UT.async_cached(srv_qry_important_words, new DS.CachedValues([])); // no initial cache
+   var cached_highlight = UT.async_cached(srv_qry_important_words, null); // we use the non-cached version
 
    function make_article_readable(your_url, then_callback) {
       UL.url_load(your_url, function (html_text) {
@@ -44,9 +41,6 @@ define(['jquery', 'debug', 'data_struct', 'url_load', 'utils', 'socketio'], func
        This case is currently considered pathological and ignored
        IMPROVEMENT : look if there is an article tag, in which case take the title and add it first with H1 tag before constructing the page
        */
-      /*
-       only for test
-       */
       /*html_text =
        '<p> S odkazem na sdělení čínské firmy to v pátek uvedla agentura Reuters. This is in order to have a minimum of five paragraphs. The bad thing is I need to have at least five paragraphs to be selected. So here are two in English and one in czech, with enough words to have a high average and be selected. propertyIsEnumerable Je ochotna za něj zaplatit 1,34 miliardy korun.  </p>';
        */
@@ -58,8 +52,8 @@ define(['jquery', 'debug', 'data_struct', 'url_load', 'utils', 'socketio'], func
       const TEXT_SELECTORS = [TEXT_SELECTORS_FILTER, LIST_SELECTORS].join(", ");
       const DIV_SELECTORS = "div"; //took off the article under div, otherwise wikipedia does not pass
       //const DIV_SELECTORS = ["div"];
-      const MIN_SENTENCE_NUMBER = 5;
-      const MIN_AVG_AVG_SENTENCE_LENGTH = 10;
+      const MIN_SENTENCE_NUMBER = 7;
+      const MIN_AVG_AVG_SENTENCE_LENGTH = 12;
 
       //logWrite(DBG.TAG.DEBUG, "html_text", html_text);
       var $source = create_div_in_DOM(SOURCE).html(html_text);
@@ -155,19 +149,7 @@ define(['jquery', 'debug', 'data_struct', 'url_load', 'utils', 'socketio'], func
          var $div_selector = $(div_selector);
          highlight_text($div_selector, TEXT_SELECTORS); //null : use current cache
          $div_selector.appendTo($dest);
-
       }
-
-      /* clean the DOM tree used for calculating the statistics*/
-
-      //rpc_socket.emit('highlight_important_words', $dest.text(), parse_result);
-      /*
-       rpc_socket.emit('highlight_important_words', 'MF DNES porovnala kurzy největších bank používané ' +
-       'pro agentura přepočet plateb kartou s kurzy směnáren ' +
-       'v několika krajských městech.', parse_result);
-       */
-      // Here we need a callback to get the results from the server, and do something on the client
-      // that should be nicely encapsulated in a function. In the end this is a RPC
 
       $source.remove();
       $dest.appendTo("body");
@@ -183,17 +165,22 @@ define(['jquery', 'debug', 'data_struct', 'url_load', 'utils', 'socketio'], func
        srv_query : the query executed on the server that returns information on the importance of the word
        */
       logEntry("highlight_proper_text");
+      /*
       var aInput = disaggregate_input(sWords);
+       var osStore = new DS.OutputStore();
+       osStore.countDown = aInput.length;
+       */
       var osStore = new DS.OutputStore();
-      osStore.countDown = aInput.length;
+      osStore.countDown = 1;
       osStore.propagateResult = function () {
          logEntry("propagateResult");
          $el.html(osStore.toString());
          logExit("propagateResult");
       };
-      aInput.map(function (element) {
+      /*aInput.map(function (element) {
          cached_highlight(element, osStore);
-      }); //ojo it needs to apply the map function in order!!
+      }); //ojo it needs to apply the map function in order!!*/
+      cached_highlight(sWords, osStore);
       logExit("highlight_proper_text");
    }
 
@@ -204,6 +191,7 @@ define(['jquery', 'debug', 'data_struct', 'url_load', 'utils', 'socketio'], func
       $("head", $el).remove();
       // text_selectors cannot have SPAN inside, otherwise it will recurse infinitely
       // Wrap a span tag around text nodes for easier modification
+      // issue: if a span do not have only text, that text outside of tags might fail to be parsed
       $(TEXT_SELECTORS, $el).contents().filter(function () {
          // filter all the noise of spaces that are converted to Node_text elements
          //todo : remove the this.nodeType!==1 redundant with the 3 put TEXT_NODE instead of 3

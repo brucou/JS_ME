@@ -61,8 +61,8 @@ requirejs(['jquery', 'debug', 'readability', 'socketio'], function ($, DEBUG, RD
 
    $(function () {
       setConfig(DBG.TAG.DEBUG, true, {by_default: true});
-      setConfig(DBG.TAG.TRACE, false, {by_default: false}); // default is don't show debug messages
-      setConfig(DBG.TAG.INFO, false, {by_default: false}); // default is don't show debug messages
+      setConfig(DBG.TAG.TRACE, false, {by_default: true}); // default is don't show debug messages
+      setConfig(DBG.TAG.INFO, false, {by_default: true}); // default is don't show debug messages
       disableLog(DBG.TAG.DEBUG, "CachedValues.init");
       disableLog(DBG.TAG.DEBUG, "putValueInCache");
       disableLog(DBG.TAG.DEBUG, "disaggregate_input");

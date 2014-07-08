@@ -114,22 +114,22 @@ io.of(RPC_NAMESPACE).on('connect', function (socket) {
 
       // todo - escaping query, and write a template mechanism similar to html templates client side
       var pgTable_WordFrequency = "pgwordfrequency";
-      var queryHighlightImportantWords = "select ts_headline('cs', %s, to_tsquery('cs', '%s'), " +
+      var queryHighlightImportantWords = "select ts_headline('cs', $1, to_tsquery('cs', $2), " +
                                          "'StartSel=\"<span class = ''highlight''>\", StopSel=\"</span>\", HighlightAll=true') " +
                                          "as highlit_text"; //important the first %s has no quotes
 
       var queryIsOneWordImportant = "select to_tsvector('cs', '%s') @@ to_tsquery('cs', '%s') as highlit_text";
       var queryFrequencyWords = "select word, frequency from " + pgTable_WordFrequency + " where ";
-      var queryString = queryIsOneWordImportant; // we go with that one now
+      var queryString = queryHighlightImportantWords; // we go with that one now
       // I also need to escape the problematic characters in the string I am passing as argument
       function pg_escape_string(string) {
          return pgVERBATIM + string + pgVERBATIM;
       }
 
-      var qryHighlightImportantWords = _.sprintf(queryString, msg, qryImportantWords);
+      var qryHighlightImportantWords = queryHighlightImportantWords;
       LOG.write(LOG.TAG.INFO, 'running query with text', msg);
 
-      client.query(qryHighlightImportantWords, function (err, result) {
+      client.query(qryHighlightImportantWords, [msg, qryImportantWords], function (err, result) {
          if (err) {
             LOG.write(LOG.TAG.ERROR, 'error running query', err);
             callback(true, {data: null, error: err});
@@ -139,18 +139,12 @@ io.of(RPC_NAMESPACE).on('connect', function (socket) {
          //socket.send(JSON.stringify({type: 'highlight_important_words', data: result.rows[0].highlit_text}));
          if (result && result.rows) {
             var highlit_text = result.rows[0].highlit_text;
-            LOG.write("callback results", result.rows[0].highlit_text);
-            if ("true" === highlit_text.toString()) {
-               LOG.write("Word is an important word", wrap_highlight_span(msg));
-               callback(false, {data: wrap_highlight_span(msg), error: false}); // no err, and important word
-            } else {
-               LOG.write("Word is not an important word", msg);
-               callback(false, {data: msg, error: false}); // no err, and not an important word
-            }
+            LOG.write("callback results", highlit_text);
+            callback(false, {data: highlit_text, error: false});
             // just in case, but because err is catched, should not be necessary
          }
       });
-      LOG.write(LOG.TAG.INFO, 'query sent to server, waiting for callback');
+      LOG.write(LOG.TAG.INFO, 'query sent to database server, waiting for callback');
    });
 });
 
