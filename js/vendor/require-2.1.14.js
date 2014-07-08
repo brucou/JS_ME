@@ -1006,7 +1006,7 @@ var requirejs, require, define;
                         this.error = err;
                         err.requireModules = [id];
 
-                        //Remove temp unnormalized modules for this module,
+                        //Remove temp.sql unnormalized modules for this module,
                         //since they will never be resolved otherwise now.
                         eachProp(registry, function (mod) {
                             if (mod.map.id.indexOf(id + '_unnormalized') === 0) {

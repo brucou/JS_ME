@@ -80,7 +80,7 @@ function disaggregate_input(sWords) {
     Tested on czech, french and english language characters
     nice to have : do further testing of international language support
     */
-   // temp: return clean_text(sWords).split(" ");
+   // temp.sql: return clean_text(sWords).split(" ");
    return sWords.replace(/[^\u00C0-\u1FFF\u2C00-\uD7FF\w\s]|_/g, function ($1) {
       return ' ' + $1 + ' ';
    }).replace(/\s+/g, ' ').trim().split(' ');

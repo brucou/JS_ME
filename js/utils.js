@@ -110,12 +110,15 @@ define(['data_struct'], function (DS) {
        The OutputStore functionality equals to that of a stream. Each character arrival (value) provokes
        a read action (function call), when the end is reached (countDown) the gathered charactered are passed to a function
        (propagateResult)
-       f: the function to be applied. f takes an object and output another one
-       initial_cache : an array of valueMap object which are simply couples (x,y) where y=f(x)
+       @param f: the function to be applied. f takes an object and output another one
+       @param initial_cache : an array of valueMap object which are simply couples (x,y) where y=f(x)
        NOTE: f: x -> y, but caching(f): [x] -> [y].
        IMPROVEMENT : possibility to index the cache! But would make sense only for a large  set of value right?
        right, I am using the in-house javascript property mechanism as a native substitute for a hash-mapped cache
        */
+      // todo: refactor to separate the OutputStore functionality out in a higher-order function
+      // f -> async_cached(f) : only the caching functionality
+      // f -> reduce(f) : only the aggregation of X f results into one results
 
       var cvCachedValues; // CachedValues is a Map array, it needs to be able to have property through CachedValues[prop] = value
 

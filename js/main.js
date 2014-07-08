@@ -44,7 +44,7 @@ requirejs.config({
  */
 
 var main_socket, rpc_socket; //todo: remove from global from better encapsulation
-const RPC_NAMESPACE = '/rpc';
+var RPC_NAMESPACE = '/rpc';
 
 requirejs(['jquery', 'debug', 'readability', 'socketio'], function ($, DEBUG, RD, IO) {
 

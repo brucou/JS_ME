@@ -10,12 +10,13 @@
    // done: hid the source div DOM to accelerate display
    // issue: analyse why some paragraphs are not parsed : http://prazsky.denik.cz/zpravy_region/lenka-mrazova-dokonalost-je-moje-hodnota-20140627.html
 // issue: lecourrierinternational what is happening?
+// issue: issue with table tags in the text : cf last link
 
 define(['jquery', 'debug', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, DEBUG, DS, UL, UT, IO) {
-   const CLASS_SELECTOR_CHAR = ".";
-   const ID_SELECTOR_CHAR = "#";
-   const SOURCE = "source";
-   const DEST = "destination";
+   var CLASS_SELECTOR_CHAR = ".";
+   var ID_SELECTOR_CHAR = "#";
+   var SOURCE = "source";
+   var DEST = "destination";
 
    function srv_qry_important_words(word, callback) {
       /*
@@ -45,20 +46,20 @@ define(['jquery', 'debug', 'data_struct', 'url_load', 'utils', 'socketio'], func
        '<p> S odkazem na sdělení čínské firmy to v pátek uvedla agentura Reuters. This is in order to have a minimum of five paragraphs. The bad thing is I need to have at least five paragraphs to be selected. So here are two in English and one in czech, with enough words to have a high average and be selected. propertyIsEnumerable Je ochotna za něj zaplatit 1,34 miliardy korun.  </p>';
        */
       logEntry("extract_relevant_text_from_html");
-      const TEXT_SELECTORS_FILTER = ["p", "h1", "h2", "h3", "h4", "h5", "h6"].join(", ");
-      const TABLE_SELECTORS = ["th", "td"].join(", ");
-      const LIST_SELECTORS = ["li"].join(", ");
+      var TEXT_SELECTORS_FILTER = ["p", "h1", "h2", "h3", "h4", "h5", "h6"].join(", ");
+      var TABLE_SELECTORS = ["th", "td"].join(", ");
+      var LIST_SELECTORS = ["li"].join(", ");
       //const TEXT_SELECTORS = [TEXT_SELECTORS_FILTER, LIST_SELECTORS, TABLE_SELECTORS].join(", ");
-      const TEXT_SELECTORS = [TEXT_SELECTORS_FILTER, LIST_SELECTORS].join(", ");
-      const DIV_SELECTORS = "div"; //took off the article under div, otherwise wikipedia does not pass
+      var TEXT_SELECTORS = [TEXT_SELECTORS_FILTER, LIST_SELECTORS].join(", ");
+      var DIV_SELECTORS = "div"; //took off the article under div, otherwise wikipedia does not pass
       //const DIV_SELECTORS = ["div"];
-      const MIN_SENTENCE_NUMBER = 7;
-      const MIN_AVG_AVG_SENTENCE_LENGTH = 12;
+      var MIN_SENTENCE_NUMBER = 7;
+      var MIN_AVG_AVG_SENTENCE_LENGTH = 10;
 
       //logWrite(DBG.TAG.DEBUG, "html_text", html_text);
       var $source = create_div_in_DOM(SOURCE).html(html_text);
       $source.hide();
-      $source.appendTo($("body"));
+      $source.appendTo($("body")); //apparently it is necessary to add it to body to avoid having head and doctype etc tag added
       var $dest = create_div_in_DOM(DEST);
       //var aData = generateTagAnalysisData($source, [DIV_SELECTORS, TEXT_SELECTORS].join(", "));
       var aData = generateTagAnalysisData($source, TEXT_SELECTORS, TABLE_SELECTORS);
@@ -265,13 +266,14 @@ define(['jquery', 'debug', 'data_struct', 'url_load', 'utils', 'socketio'], func
                   //logWrite(DBG.TAG.DEBUG, "element read", tagName, element.id, element.textContent);
                   //logWrite(DBG.TAG.DEBUG, "element parent", parentTagName);
 
+                  // this portion of code ensure that value in tables do no count towards the stats
+                  // if they would, table elements with one number would dramatically lower the average of words
+                  // per sentence, hence a greater likelihood of excluding paragraphs
                   var isTableContent = parentTagName.search("T") ? "false" : "true";
-                  //TABLE_SELECTORS.split(" ").join("|"));
-                  //logWrite(DBG.TAG.DEBUG, "is a table element?", isTableContent);
-
                   if (isTableContent === "true") {
                      break;
                   }
+
                   var hierarchy = $(this).parentsUntil("body", "div") || [$("body")]; //!! to test! if no div enclosing, then body is used
                   var div = $(hierarchy[0]); // By construction can't be null right?
 

@@ -14,7 +14,7 @@
  Then 'cs' is the name for full text search
  */
 
-// todo : define a list (script file to create table) with important words -> to_tsquery, be careful with syntax 'word |...' cf. temp.js
+// todo : define a list (script file to create table) with important words -> to_tsquery, be careful with syntax 'word |...' cf. temp.sql.js
 // todo : connect with socket.io and receive a text file from client to return with important words
 // todo: add a debug systme
 
