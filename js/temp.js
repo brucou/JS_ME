@@ -129,6 +129,7 @@ Příliš žluťoučký kůň se napil žluté vody
 select * from ts_debug('cs','Příliš žluťoučký kůň se napil žluté vody');
 SELECT ts_lexize('cspell','napil'); ->napit
  */
+ç
 
 /*
  client.query("select string_agg(word, ' | ') as freq_words from pgWordFrequency where freq_cat = 'A';",
@@ -141,3 +142,6 @@ SELECT ts_lexize('cspell','napil'); ->napit
  //output: Tue Jan 15 2013 19:12:47 GMT-600 (CST)
  });
  */
+qunit, jasmine, sinon, mocha, jstestdriver, karma
+
+will use karma with mocha and sinon
