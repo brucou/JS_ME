@@ -11,39 +11,12 @@
 // issue: analyse why some paragraphs are not parsed : http://prazsky.denik.cz/zpravy_region/lenka-mrazova-dokonalost-je-moje-hodnota-20140627.html
 // issue: lecourrierinternational what is happening?
 // issue: issue with table tags in the text : cf last link
-if ('function' !== typeof define) {// if the function is loaded from a test framework
-   var argumentsRegExp = /\(([\s\S]*?)\)/;
-   var replaceRegExp = /[ ,\n\r\t]+/;
-   var STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
-   window.__introspect__ = function (fn) {
-      var fnStr = fn.toString().replace(STRIP_COMMENTS, '');
-      var fnArguments = argumentsRegExp.exec(fnStr)[1].trim();
-      if (0 === fnArguments.length) {
-         return [];
-      }
-      return fnArguments.split(replaceRegExp);
-   };
-   window.define = function (depsArray, module_fn) {
-      var aParamsName = __introspect__(module_fn);
-      aParamsName.map(function (value, index, array) {
-         var trimmedValue = array[index]=value.trim();
-         if ('$' !== window[trimmedValue]) { //except jQuery, which should be global from the jQuery library
-            window[trimmedValue] = window[trimmedValue] || {}; // define all parameters them with an empty object
-            // they will be set to their real values when the corresponding script loads
 
-         }
-      });
-      // I still have to execute the function now
-      module_fn.apply(null, aParamsName);
-   }
-}
-
-define(['jquery', 'debug', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, DEBUG, DS, UL, UT, IO) {
+define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, DS, UL, UT, IO) {
    var CLASS_SELECTOR_CHAR = ".";
    var ID_SELECTOR_CHAR = "#";
    var SOURCE = "source";
    var DEST = "destination";
-   var RD = window.RD = {}; //set the variable as global so we can test it more easily in karma and the like
 
    function srv_qry_important_words(word, callback) {
       /*
@@ -52,8 +25,6 @@ define(['jquery', 'debug', 'data_struct', 'url_load', 'utils', 'socketio'], func
        */
       rpc_socket.emit('highlight_important_words', word, callback);
    }
-
-   RD.srv_qry_important_words = srv_qry_important_words;
 
    //var cached_highlight = UT.async_cached(srv_qry_important_words, new DS.CachedValues([])); // no initial cache
    var cached_highlight = UT.async_cached(srv_qry_important_words, null); // we use the non-cached version
@@ -64,8 +35,6 @@ define(['jquery', 'debug', 'data_struct', 'url_load', 'utils', 'socketio'], func
          then_callback();
       });
    }
-
-   RD.make_article_readable = make_article_readable;
 
    function extract_relevant_text_from_html(html_text) {
       /*
@@ -189,8 +158,6 @@ define(['jquery', 'debug', 'data_struct', 'url_load', 'utils', 'socketio'], func
       logExit("extract_relevant_text_from_html");
    }
 
-   RD.extract_relevant_text_from_html = extract_relevant_text_from_html;
-
    function highlight_proper_text(sWords, $el) {
       /*
        sWords : sentence whose words are to be highlit
@@ -217,8 +184,6 @@ define(['jquery', 'debug', 'data_struct', 'url_load', 'utils', 'socketio'], func
       cached_highlight(sWords, osStore);
       logExit("highlight_proper_text");
    }
-
-   RD.highlight_proper_text = highlight_proper_text;
 
    function highlight_text($el, TEXT_SELECTORS) {
       logEntry("highlight_text");
@@ -248,8 +213,6 @@ define(['jquery', 'debug', 'data_struct', 'url_load', 'utils', 'socketio'], func
       }
       logExit("highlight_text");
    }
-
-   RD.highlight_text = highlight_text;
 
    function generateTagAnalysisData($source, tagHTML, TABLE_SELECTORS) {
       /*
@@ -342,8 +305,6 @@ define(['jquery', 'debug', 'data_struct', 'url_load', 'utils', 'socketio'], func
 
    }
 
-   RD.generateTagAnalysisData = generateTagAnalysisData;
-
    function getIndexInArray(aArray, field_to_search, value) {
       var i = 0, iIndex = -1;
       for (i = 0; i < aArray.length; i++) {
@@ -354,8 +315,6 @@ define(['jquery', 'debug', 'data_struct', 'url_load', 'utils', 'socketio'], func
       }
       return iIndex;
    }
-
-   RD.getIndexInArray = getIndexInArray;
 
    function create_div_in_DOM(div_id) {
       /* Create div element to hold the result
@@ -371,21 +330,18 @@ define(['jquery', 'debug', 'data_struct', 'url_load', 'utils', 'socketio'], func
       return $div;
    }
 
-   RD.create_div_in_DOM = create_div_in_DOM;
-
    function activate_read_words_over() {
       $("#" + DEST + " p").click(function (e) {
          console.log("Found: " + getWordAtPoint(e.target, e.clientX, e.clientY));
       });
    }
 
-   RD.activate_read_words_over = activate_read_words_over;
-
    return {//that's the object returned only for requirejs, e.g. the visible interface exposed
       extract_relevant_text_from_html: extract_relevant_text_from_html,
       make_article_readable          : make_article_readable,
       generateTagAnalysisData        : generateTagAnalysisData,
-      activate_read_words_over       : activate_read_words_over
+      activate_read_words_over       : activate_read_words_over,
+      getIndexInArray: getIndexInArray
    };
 });
 

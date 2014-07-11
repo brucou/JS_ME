@@ -142,6 +142,6 @@ SELECT ts_lexize('cspell','napil'); ->napit
  //output: Tue Jan 15 2013 19:12:47 GMT-600 (CST)
  });
  */
-qunit, jasmine, sinon, mocha, jstestdriver, karma
 
-will use karma with mocha and sinon
+// qunit, jasmine, sinon, mocha, jstestdriver, karma
+// ->will use karma with mocha and sinon

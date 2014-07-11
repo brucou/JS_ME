@@ -4,30 +4,6 @@
 
 // jquery.xdomainajax.js  ------ from padolsey
 
-if ('function' !== typeof define) {// if the function is loaded from a test framework
-   var argumentsRegExp = /\(([\s\S]*?)\)/;
-   var replaceRegExp = /[ ,\n\r\t]+/;
-   var STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
-   window.__introspect__ = function (fn) {
-      var fnStr = fn.toString().replace(STRIP_COMMENTS, '');
-      var fnArguments = argumentsRegExp.exec(fnStr)[1].trim();
-      if (0 === fnArguments.length) {
-         return [];
-      }
-      return fnArguments.split(replaceRegExp);
-   };
-   window.define = function (depsArray, module_fn) {
-      var aParamsName = __introspect__(module_fn);
-      aParamsName.map(function (value, index, array) {
-         var trimmedValue = value.trim();
-         if ('$' !== window[trimmedValue]) { //except jQuery, which should be global from the jQuery library
-            window[trimmedValue] = window[trimmedValue] || {}; // define all parameters them with an empty object
-            // they will be set to their real values when the corresponding script loads
-         }
-      })
-   }
-}
-
 define(['jquery'],
        function ($) {
           $.ajax = (function (_ajax) {

@@ -22,7 +22,7 @@ var http, express, app, io, server, _; // server connection variables
 var pg, client; // database connection variables
 const conString = "postgres://postgres:Italska184a@localhost/postgres"; // connection string
 const PREFIX_DIR_SERVER = '../server';
-const PREFIX_DIR_CLIENT = '..';
+const PREFIX_DIR_CLIENT = '.';
 const pgVERBATIM = "$random_some$"; // !! if this is already in the text, there will be a problem
 // todo: randomize that constant
 
@@ -36,12 +36,12 @@ function initialize_server() {
    // Set the view engine
    app.set('view engine', 'jade');
    // Where to find the view files
-   app.set('views', PREFIX_DIR_SERVER + '/views');
+   app.set('views', __dirname + '/views'); //__dirname : directory in which the currently executing script resides
 
-   app.use(express.static(PREFIX_DIR_CLIENT + ''));
+   app.use(express.static(__dirname+"/../")); //we point to the home directory of the project to get any files there
 
    // A route for the home page - will render a view
-   app.get('/', function (req, res) {
+   app.get('/', function (req, res) {// won't execute as the static file loader of express will use index.html instead
       res.render('hello');
    });
 
