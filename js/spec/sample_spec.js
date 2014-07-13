@@ -15,7 +15,7 @@ define(['chai','readability'], function(chai, RD) {
          function Obj() {}
          Obj.prototype.method = function() {
             return ('I am Obj#method()');
-         }
+         };
 
          sinon.stub(Obj.prototype, 'method', function() {
             return ('I am Sinon stub!');

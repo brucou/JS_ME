@@ -11,9 +11,7 @@
  ObjectConstructor : object
  */
 
-// todo modularize js
 // nice to have documentation in code, refactoring, and split in file
-// nice to have improve CSS of page result - take the whole page till div
 
 /*
  Configuring require.js
@@ -46,6 +44,7 @@ requirejs.config({
 var main_socket, rpc_socket; //todo: remove from global from better encapsulation
 var RPC_NAMESPACE = '/rpc';
 
+///*
 requirejs(['jquery', 'debug', 'readability', 'socketio'], function ($, DEBUG, RD, IO) {
 
    // testing socket.io
@@ -78,12 +77,4 @@ requirejs(['jquery', 'debug', 'readability', 'socketio'], function ($, DEBUG, RD
       });
    });
 });
-
-// Start the main app logic.
-/*
- requirejs(['jquery', 'canvas', 'app/sub'],
- function   ($,        canvas,   sub) {
- //jQuery, canvas and the app/sub module are all
- //loaded and can be used here now.
- });
- */
+// */

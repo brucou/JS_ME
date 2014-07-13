@@ -2,7 +2,6 @@
  * Created by bcouriol on 13/06/14.
  */
 
-   // todo: verifier que la nouvelle fonction inspect fonctionne bien sans aucune reference restante a node.js (util)
 
 define(['data_struct'], function (DS) {
    Array.prototype.isItArray = true;
@@ -31,6 +30,7 @@ define(['data_struct'], function (DS) {
        */
       // issue: sure inconsistency if the cache has one x and two y, e.g. if the mapping is not the one for a function, that should be checked somewhere
       // nice to have: test for performance, weak link is indexOf search in the cache.
+      // todo: change or delete the whole implementation - there are (a)sync. memoize in many places: https://github.com/medikoo/memoize
 
       var aCache = initial_cache; // out of the function
       /* check that aCache is an array
@@ -93,7 +93,7 @@ define(['data_struct'], function (DS) {
             return mapped_values;
          }
       };
-      cached_f.cache = aCache; // todo : seeing if it is possible to return the cache object for further modification
+      cached_f.cache = aCache;
       cached_f.f = f; // giving a way to return to the original uncached version of f)
 
       return cached_f;
@@ -414,7 +414,7 @@ define(['data_struct'], function (DS) {
 
    function isPunct(char) {
       // return true if the character char is a punctuation sign
-      // nice to have: improve to adjust list of punctuation by language
+      // todo: improve to adjust list of punctuation by language
       if (char.length > 1) {
          return null;
       } else {

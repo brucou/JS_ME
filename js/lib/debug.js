@@ -7,8 +7,7 @@
 
 // done: fine-grained tuning by tag and function of log displaying
 // done: added a timeStamp function to log time of messages
-// nice to have Ajouter d'autre tags?
-// nice to have changer tous les DBG_ en DBG.
+   // nice to have: changer tous les DBG_ en DBG.
 
 var DBG_INDENT_PREFIX = "";
 const DBG_INDENT_STRING = "--";

@@ -145,3 +145,4 @@ SELECT ts_lexize('cspell','napil'); ->napit
 
 // qunit, jasmine, sinon, mocha, jstestdriver, karma
 // ->will use karma with mocha and sinon
+// don't forget q.js (promises), Nock (mocks for http and network mocking and expectations)

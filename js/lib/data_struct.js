@@ -191,7 +191,7 @@ define(['utils'], function (UT) {
 
       OutputStore: function OutputStore(init) {
          // constructor
-         init = init || {countDown: 1, aStore: []}; // default parameters todo : think better if 1 is appropriate default value
+         init = init || {countDown: 1, aStore: []}; // default parameters, execute action after 1 value is stored
          this.aStore = init.aStore;
          this.countDown = init.countDown;
          this.toString = function () {
@@ -230,7 +230,6 @@ define(['utils'], function (UT) {
          this.propagateResult = function () {
             // here should be upadated by the caller to reflect actions to perform when
             // all async calls have returned with their results in the store
-            // todo : how to manage errors??
             logWrite(DBG.TAG.WARNING, "no propagateResult function!");
          };
          this.push = function (value) {

@@ -5,12 +5,12 @@
 // issue: deal with the error when the page cannot be loaded (undefined)
 // issue: deal with lemonde, some words give null when you click on it?? Seems to happen after anchor links : replace anchor links by span class and copy the style of links
 // todo : disable click on links anyways - interacts with word info functionality
-// nice to have : refactor to separate selector (display) from functionality?
 // todo: !!test how the callback works in case of error in query on server
-// done: hid the source div DOM to accelerate display
+// todo: differ the display in DOM after receiving all results from callback from server (with timeout not to block)
 // issue: analyse why some paragraphs are not parsed : http://prazsky.denik.cz/zpravy_region/lenka-mrazova-dokonalost-je-moje-hodnota-20140627.html
 // issue: lecourrierinternational what is happening?
 // issue: issue with table tags in the text : cf last link
+// todo: write tests for each function (unit tests) and then for the higher level functions
 
 define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, DS, UL, UT, IO) {
    var CLASS_SELECTOR_CHAR = ".";
@@ -31,7 +31,8 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
 
    function make_article_readable(your_url, then_callback) {
       UL.url_load(your_url, function (html_text) {
-         extract_relevant_text_from_html(html_text);
+         var $dest = extract_relevant_text_from_html(html_text);
+         $dest.appendTo("body");
          then_callback();
       });
    }
@@ -153,9 +154,10 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
       }
 
       $source.remove();
-      $dest.appendTo("body");
 
       logExit("extract_relevant_text_from_html");
+      return $dest;
+
    }
 
    function highlight_proper_text(sWords, $el) {
@@ -193,6 +195,7 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
       // text_selectors cannot have SPAN inside, otherwise it will recurse infinitely
       // Wrap a span tag around text nodes for easier modification
       // issue: if a span do not have only text, that text outside of tags might fail to be parsed
+      // remove text_selectors filter, do it for all tags, except for span -> cf. filter function application
       $(TEXT_SELECTORS, $el).contents().filter(function () {
          // filter all the noise of spaces that are converted to Node_text elements
          //todo : remove the this.nodeType!==1 redundant with the 3 put TEXT_NODE instead of 3
@@ -272,7 +275,7 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
                   var isTableContent = parentTagName.search("T") ? "false" : "true";
                   if (isTableContent === "true") {
                      break;
-                  }
+                  } //todo : rewrite correctly to use a boolean
 
                   var hierarchy = $(this).parentsUntil("body", "div") || [$("body")]; //!! to test! if no div enclosing, then body is used
                   var div = $(hierarchy[0]); // By construction can't be null right?
@@ -294,7 +297,7 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
                   aData.push(paragraghData);
                }
                break;
-            case elem.TEXT_NODE: //Represents textual content in an element or attribute, todo: this might cover text with a <p>, deal with it?
+            case elem.TEXT_NODE: //Represents textual content in an element or attribute
                logWrite(DBG.TAG.WARNING, "text", element);
                break;
             default:
