@@ -67,7 +67,7 @@ requirejs(['jquery', 'debug', 'readability', 'socketio'], function ($, DEBUG, RD
       disableLog(DBG.TAG.DEBUG, "disaggregate_input");
       disableLog(DBG.TAG.DEBUG, "async_cached_f");
       enableLog(DBG.TAG.DEBUG, "propagateResult");
-      enableLog(DBG.TAG.DEBUG, "highlight_text");
+      enableLog(DBG.TAG.DEBUG, "highlight_text_div");
 
       rpc_socket = IO.connect(RPC_NAMESPACE);
       logWrite(DBG.TAG.INFO, 'rpc_socket', 'connected');

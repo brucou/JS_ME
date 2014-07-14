@@ -2,15 +2,15 @@
  * Created by bcouriol on 5/06/14.
  */
 
-// issue: deal with the error when the page cannot be loaded (undefined)
-// issue: deal with lemonde, some words give null when you click on it?? Seems to happen after anchor links : replace anchor links by span class and copy the style of links
-// todo : disable click on links anyways - interacts with word info functionality
-// todo: !!test how the callback works in case of error in query on server
-// todo: differ the display in DOM after receiving all results from callback from server (with timeout not to block)
-// issue: analyse why some paragraphs are not parsed : http://prazsky.denik.cz/zpravy_region/lenka-mrazova-dokonalost-je-moje-hodnota-20140627.html
-// issue: lecourrierinternational what is happening?
-// issue: issue with table tags in the text : cf last link
-// todo: write tests for each function (unit tests) and then for the higher level functions
+   // issue: deal with the error when the page cannot be loaded (undefined)
+   // issue: deal with lemonde, some words give null when you click on it?? Seems to happen after anchor links : replace anchor links by span class and copy the style of links
+   // todo : disable click on links anyways - interacts with word info functionality
+   // todo: !!test how the callback works in case of error in query on server
+   // todo: differ the display in DOM after receiving all results from callback from server (with timeout not to block)
+   // issue: analyse why some paragraphs are not parsed : http://prazsky.denik.cz/zpravy_region/lenka-mrazova-dokonalost-je-moje-hodnota-20140627.html
+   // issue: lecourrierinternational what is happening?
+   // issue: issue with table tags in the text : cf last link
+   // todo: write tests for each function (unit tests) and then for the higher level functions
 
 define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, DS, UL, UT, IO) {
    var CLASS_SELECTOR_CHAR = ".";
@@ -57,15 +57,12 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
       var MIN_SENTENCE_NUMBER = 7;
       var MIN_AVG_AVG_SENTENCE_LENGTH = 10;
 
-      //logWrite(DBG.TAG.DEBUG, "html_text", html_text);
       var $source = create_div_in_DOM(SOURCE).html(html_text);
       $source.hide();
       $source.appendTo($("body")); //apparently it is necessary to add it to body to avoid having head and doctype etc tag added
       var $dest = create_div_in_DOM(DEST);
-      //var aData = generateTagAnalysisData($source, [DIV_SELECTORS, TEXT_SELECTORS].join(", "));
       var aData = generateTagAnalysisData($source, TEXT_SELECTORS, TABLE_SELECTORS);
 
-      //logWrite(DBG.TAG.DEBUG, "aData", aData);
       /* A.
        for each div:
        for each paragraph in that div
@@ -107,8 +104,27 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
       }
 
       /* Identify the div classes to keep in the DOM */
-      var selectedDivs = [];
       logWrite(DBG.TAG.INFO, "Identify the div classes to keep in the DOM");
+      var selectedDivs = select_div_to_keep (aDivRow, MIN_SENTENCE_NUMBER, MIN_AVG_AVG_SENTENCE_LENGTH);
+
+      logWrite(DBG.TAG.INFO, "Reading and adding title");
+      read_and_add_title_to_$el($source, $dest);
+
+      logWrite(DBG.TAG.INFO, "Highlighting important words");
+      highlight_important_words(selectedDivs, $dest);
+      $source.remove();
+
+      logExit("extract_relevant_text_from_html");
+      return $dest;
+   }
+
+   function select_div_to_keep(aDivRow, MIN_SENTENCE_NUMBER, MIN_AVG_AVG_SENTENCE_LENGTH) {
+      /**
+       @param aDivRow {array} array of div elements from the page to analyze
+       @returns {array} filtered array with only the div elements to keep for presentation, e.g. the important text
+       */
+      var selectedDivs = [];
+      var pdStatRowPartial, i;
       for (i = 0; i < aDivRow.length; i++) {
          pdStatRowPartial = aDivRow[i]; //ParagraphData object
          if (pdStatRowPartial.sum_sentence_number >= MIN_SENTENCE_NUMBER &&
@@ -123,41 +139,33 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
 
          }
       }
+   return selectedDivs;
+   }
 
+   function highlight_important_words(aSelectedDivs, $dest) {
       /*
-       traverse DOM tree and display only the text tags (p, h1, etc.) under the selected divs
-       NOTE : might be necessary to have a special treatment for div with no classes or id selectors
+       for each element of the array of selected div elements, highlight its text content
+       then put the result in the destination DOM element
+       The DOM takes the el from its source and (RE)MOVES it to the destination
+       issue : might be necessary to have a special treatment for div with no classes AND no id selectors
        */
-      logWrite(DBG.TAG.INFO, "Reading and adding title");
-      $dest.append($("<div id='article' class='title'/>"));
-      var $dTitle = $("#article.title", $dest);
-      var $title = $("title", $source);
-      $dTitle.text($title.text());// praying that there is only 1 title on the page...
-
-      logWrite(DBG.TAG.INFO, "Highlighting important words");
-      for (i = 0; i < selectedDivs.length; i++) {
-         pdStatRowPartial = selectedDivs[i];
+      var pdStatRowPartial;
+      for (i = 0; i < aSelectedDivs.length; i++) {
+         pdStatRowPartial = aSelectedDivs[i];
          var div_selector = pdStatRowPartial.div;
-         if (div_selector.length === 0) { // this is pathological case, where the relevant text is directly under the body tag
+         if (div_selector.length === 0) {
+            // this is pathological case, where the relevant text is directly under the body tag
+            // that should not happen as we are always under body under that version of the algorithm
+            // so just warns in console
             logWrite(DBG.TAG.WARNING, "div_selector is empty, ignoring");
             continue;
          }
 
          logWrite(DBG.TAG.INFO, "Highlighting important words on text from", div_selector);
-
-         //$dest.append($(TEXT_SELECTORS, $(div_selector, $source)));
-         // change this by calling new functions on a div
-         //$body = $("body", $source);
          var $div_selector = $(div_selector);
-         highlight_text($div_selector, TEXT_SELECTORS); //null : use current cache
+         highlight_text_in_div($div_selector); //null : use current cache
          $div_selector.appendTo($dest);
       }
-
-      $source.remove();
-
-      logExit("extract_relevant_text_from_html");
-      return $dest;
-
    }
 
    function highlight_proper_text(sWords, $el) {
@@ -187,8 +195,9 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
       logExit("highlight_proper_text");
    }
 
-   function highlight_text($el, TEXT_SELECTORS) {
-      logEntry("highlight_text");
+   function highlight_text_in_div($el) {
+      logEntry("highlight_text_in_div");
+      var TEXT_SELECTORS = ["p", "h1", "h2", "h3", "h4", "h5", "h6", "li"].join(", ");
 
       $("script", $el).remove();
       $("head", $el).remove();
@@ -211,10 +220,10 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
          logWrite(DBG.TAG.DEBUG, "", "tag", $el.get(0).tagName, "has ", length, "children", "processing them");
 
          $el.children().each(function () {
-            highlight_text($(this), TEXT_SELECTORS);
+            highlight_text_in_div($(this), TEXT_SELECTORS);
          });
       }
-      logExit("highlight_text");
+      logExit("highlight_text_in_div");
    }
 
    function generateTagAnalysisData($source, tagHTML, TABLE_SELECTORS) {
@@ -308,6 +317,14 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
 
    }
 
+   function read_and_add_title_to_$el($source, $dest) {
+      // read the title tag from $source element and set it to $dest element
+      $dest.append($("<div id='article' class='title'/>"));
+      var $dTitle = $("#article.title", $dest);
+      var $title = $("title", $source);
+      $dTitle.text($title.text());// praying that there is only 1 title on the page...
+   }
+
    function getIndexInArray(aArray, field_to_search, value) {
       var i = 0, iIndex = -1;
       for (i = 0; i < aArray.length; i++) {
@@ -344,7 +361,8 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
       make_article_readable          : make_article_readable,
       generateTagAnalysisData        : generateTagAnalysisData,
       activate_read_words_over       : activate_read_words_over,
-      getIndexInArray: getIndexInArray
+      getIndexInArray                : getIndexInArray,
+      read_and_add_title_to_$el      : read_and_add_title_to_$el
    };
 });
 

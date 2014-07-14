@@ -94,7 +94,6 @@ function logWrite(tag, text, arg) {
    /*
     Add parameters validation : text can't be null or undefined
     */
-   var i;
    var context = lastElemArray(DBG.CONTEXT);
    // if detailed configs are allowed then look at it, if false don't do anything
    if (DBG.CONFIG[ALL] && DBG.CONFIG[tag][ALL] && !DBG.CONFIG[tag][context]) {
@@ -110,6 +109,7 @@ function logWrite(tag, text, arg) {
 }
 
 function logForceWrite(tag, text, arg) {
+   var i;
    if (arg) {
       for (i = 2; i != arguments.length; i++) {
          if (!arguments[i]) {
