@@ -43,9 +43,6 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
        This case is currently considered pathological and ignored
        IMPROVEMENT : look if there is an article tag, in which case take the title and add it first with H1 tag before constructing the page
        */
-      /*html_text =
-       '<p> S odkazem na sdělení čínské firmy to v pátek uvedla agentura Reuters. This is in order to have a minimum of five paragraphs. The bad thing is I need to have at least five paragraphs to be selected. So here are two in English and one in czech, with enough words to have a high average and be selected. propertyIsEnumerable Je ochotna za něj zaplatit 1,34 miliardy korun.  </p>';
-       */
       logEntry("extract_relevant_text_from_html");
       var TEXT_SELECTORS_FILTER = ["p", "h1", "h2", "h3", "h4", "h5", "h6"].join(", ");
       var TABLE_SELECTORS = ["th", "td"].join(", ");
@@ -61,7 +58,7 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
       $source.hide();
       $source.appendTo($("body")); //apparently it is necessary to add it to body to avoid having head and doctype etc tag added
       var $dest = create_div_in_DOM(DEST);
-      var aData = generateTagAnalysisData($source, TEXT_SELECTORS, TABLE_SELECTORS);
+      var aData = generateTagAnalysisData($source);
 
       /* A.
        for each div:
@@ -75,6 +72,35 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
        First compute the tag and text stats grouped by div
        */
       logWrite(DBG.TAG.INFO, "First compute the tag and text stats grouped by div");
+      var aDivRow = compute_text_stats_group_by_div(aData);
+
+      /* we finished exploring, now gather the final stats (averages)
+       */
+      logWrite(DBG.TAG.INFO, "We finished exploring, now gather the final stats (averages)");
+      for (i = 0; i < aDivRow.length; i++) {
+         aDivRow[i].avg_avg_sentence_length = aDivRow[i].sum_avg_sentence_length / aDivRow[i].count_avg_sentence_length;
+      }
+
+      /* Identify the div classes to keep in the DOM */
+      logWrite(DBG.TAG.INFO, "Identify the div classes to keep in the DOM");
+      var selectedDivs = select_div_to_keep(aDivRow, MIN_SENTENCE_NUMBER, MIN_AVG_AVG_SENTENCE_LENGTH);
+
+      logWrite(DBG.TAG.INFO, "Reading and adding title");
+      read_and_add_title_to_$el($source, $dest);
+
+      logWrite(DBG.TAG.INFO, "Highlighting important words");
+      highlight_important_words(selectedDivs, $dest);
+      $source.remove();
+
+      logExit("extract_relevant_text_from_html");
+      return $dest;
+   }
+
+   function compute_text_stats_group_by_div(aData) {
+      /*
+       @param aData {array} todo
+       @returns {array} todo
+       */
       var aDivRow = []; // contains stats for each div
       var i; // loop variable
       for (i = 0; i < aData.length; i++) {
@@ -95,27 +121,7 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
             }
          }
       }
-
-      /* we finished exploring, now gather the final stats (averages)
-       */
-      logWrite(DBG.TAG.INFO, "We finished exploring, now gather the final stats (averages)");
-      for (i = 0; i < aDivRow.length; i++) {
-         aDivRow[i].avg_avg_sentence_length = aDivRow[i].sum_avg_sentence_length / aDivRow[i].count_avg_sentence_length;
-      }
-
-      /* Identify the div classes to keep in the DOM */
-      logWrite(DBG.TAG.INFO, "Identify the div classes to keep in the DOM");
-      var selectedDivs = select_div_to_keep (aDivRow, MIN_SENTENCE_NUMBER, MIN_AVG_AVG_SENTENCE_LENGTH);
-
-      logWrite(DBG.TAG.INFO, "Reading and adding title");
-      read_and_add_title_to_$el($source, $dest);
-
-      logWrite(DBG.TAG.INFO, "Highlighting important words");
-      highlight_important_words(selectedDivs, $dest);
-      $source.remove();
-
-      logExit("extract_relevant_text_from_html");
-      return $dest;
+      return aDivRow;
    }
 
    function select_div_to_keep(aDivRow, MIN_SENTENCE_NUMBER, MIN_AVG_AVG_SENTENCE_LENGTH) {
@@ -139,7 +145,7 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
 
          }
       }
-   return selectedDivs;
+      return selectedDivs;
    }
 
    function highlight_important_words(aSelectedDivs, $dest) {
@@ -226,24 +232,18 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
       logExit("highlight_text_in_div");
    }
 
-   function generateTagAnalysisData($source, tagHTML, TABLE_SELECTORS) {
-      /*
+   function generateTagAnalysisData($source) {
+      /**
        INPUT:
-       source_id : the id of the div source within which to select the text
-       tagHTML : the tags to filter the div (e.g. text tags)
-       OUTPUT : returns an array with text stats in ParagraphData object (div class, sentence number etc.)
+       @param $source {jquery element} the id of the div source within which to select the text
+       @returns {array} returns an array with text stats in ParagraphData object (div class, sentence number etc.)
        */
       logEntry("generateTagAnalysisData");
 
+      var tagHTML = ["p", "h1", "h2", "h3", "h4", "h5", "h6", "li"].join(", ");
       var aData = []; // array which will contain the analysis of text paragraphs
 
-      /* Set the source div to the text to analyze to be able to use jQuery on it
-       Note : Otherwise, I would have to do the parsing myself
-       */
-
-      /* Do come clean-up of in-the-way tags */
-      //$("head", $source).remove(); don't remove the head, the title tag can be in it
-      logWrite(DBG.TAG.DEBUG, "title", $("title", $source).text());
+      /* Do clean-up of in-the-way tags */
       $("script", $source).remove();
       $("meta", $source).remove();
       $("link", $source).remove();
@@ -254,19 +254,17 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
        number of links
        the first enclosing div
        */
-      logWrite(DBG.TAG.DEBUG, "tagHTML", tagHTML);
-      //$(tagHTML, $source).each(get_tag_stat);
+      logWrite(DBG.TAG.DEBUG, "Computing stats on text with tags", tagHTML);
       $(tagHTML, $source).each(get_tag_stat);
 
-      //logWrite(DBG.TAG.DEBUG, "aData", aData);
       logExit("generateTagAnalysisData");
       return aData;
 
-      function show(index, element) {
-         logWrite(DBG.TAG.DEBUG, "element read", element.tagName, element.id, element.textContent);
-      }
-
       function get_tag_stat(index, element) {
+         // I have to put it inside that bloc to have aData available in the closure
+         // that makes it harder to test it separately
+         // called from a DOM object, in an each context
+         // that means this refers to the DOM element, NOTE: the DOM element, not the jQuery version
          var paragraghData = new DS.ParagraphData();
          switch (element.nodeType) {
             case 1: //Represents an element
@@ -314,11 +312,11 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
                logWrite(DBG.TAG.WARNING, "do nothing");
          }
       }
-
    }
 
    function read_and_add_title_to_$el($source, $dest) {
       // read the title tag from $source element and set it to $dest element
+      logWrite(DBG.TAG.DEBUG, "title", $("title", $source).text());
       $dest.append($("<div id='article' class='title'/>"));
       var $dTitle = $("#article.title", $dest);
       var $title = $("title", $source);
@@ -357,12 +355,17 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
    }
 
    return {//that's the object returned only for requirejs, e.g. the visible interface exposed
-      extract_relevant_text_from_html: extract_relevant_text_from_html,
       make_article_readable          : make_article_readable,
+      extract_relevant_text_from_html: extract_relevant_text_from_html,
       generateTagAnalysisData        : generateTagAnalysisData,
-      activate_read_words_over       : activate_read_words_over,
+      compute_text_stats_group_by_div: compute_text_stats_group_by_div,
+      select_div_to_keep             : select_div_to_keep,
+      highlight_important_words      : highlight_important_words,
+      highlight_proper_text          : highlight_proper_text,
+      highlight_text_in_div          : highlight_text_in_div,
+      read_and_add_title_to_$el      : read_and_add_title_to_$el,
       getIndexInArray                : getIndexInArray,
-      read_and_add_title_to_$el      : read_and_add_title_to_$el
+      create_div_in_DOM              : create_div_in_DOM,
+      activate_read_words_over       : activate_read_words_over
    };
 });
-
