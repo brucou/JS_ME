@@ -241,9 +241,12 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
       logEntry("generateTagAnalysisData");
 
       var tagHTML = ["p", "h1", "h2", "h3", "h4", "h5", "h6", "li"].join(", ");
+      // table tags and spans should not be among those tags as it would affect the accurate counting of sentences.
+      // table tags : a lots of single words would lower dramatically the average sentence number
+      // span tags : One sentence can be separated into several span which falsify the counting
       var aData = []; // array which will contain the analysis of text paragraphs
 
-      /* Do clean-up of in-the-way tags */
+      // Do clean-up of in-the-way tags
       $("script", $source).remove();
       $("meta", $source).remove();
       $("link", $source).remove();
@@ -271,42 +274,47 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
                // look for nodename and do something
                var tagName = element.tagName;
 
-               if (tagName !== "DIV") {
-                  var parentTagName = $(this).parent()[0].tagName;
-                  //logWrite(DBG.TAG.DEBUG, "element read", tagName, element.id, element.textContent);
-                  //logWrite(DBG.TAG.DEBUG, "element parent", parentTagName);
+               var parentTagName = $(this).parent()[0].tagName;
+               //logWrite(DBG.TAG.DEBUG, "element read", tagName, element.id, element.textContent);
+               //logWrite(DBG.TAG.DEBUG, "element parent", parentTagName);
 
-                  // this portion of code ensure that value in tables do no count towards the stats
-                  // if they would, table elements with one number would dramatically lower the average of words
-                  // per sentence, hence a greater likelihood of excluding paragraphs
-                  var isTableContent = parentTagName.search("T") ? "false" : "true";
-                  if (isTableContent === "true") {
-                     break;
-                  } //todo : rewrite correctly to use a boolean
-
-                  var hierarchy = $(this).parentsUntil("body", "div") || [$("body")]; //!! to test! if no div enclosing, then body is used
-                  var div = $(hierarchy[0]); // By construction can't be null right?
-
-                  paragraghData.$el = $(this);
-                  paragraghData.tag = tagName;
-                  paragraghData.text = element.textContent;
-                  var text_stats = get_text_stats(paragraghData.text);
-                  paragraghData.sentence_number = text_stats.sentence_number;
-                  paragraghData.avg_sentence_length = text_stats.avg_sentence_length;
-                  paragraghData.enclosing_div_id = (typeof div.attr("id") === "undefined") ? "" : div.attr("id");
-                  paragraghData.enclosing_div_class =
-                  (typeof div.attr("class") === "undefined") ? "" : div.attr("class");
-                  paragraghData.enclosing_div =
-                  ((paragraghData.enclosing_div_id !== "") ? ID_SELECTOR_CHAR + paragraghData.enclosing_div_id : "") + (
-                     (paragraghData.enclosing_div_class !== "") ?
-                     CLASS_SELECTOR_CHAR + paragraghData.enclosing_div_class : "");
-
-                  aData.push(paragraghData);
+               // this portion of code ensure that value in tables do no count towards the stats
+               // if they would, table elements with one number would dramatically lower the average of words
+               // per sentence, hence a greater likelihood of excluding paragraphs
+               //var isTableContent =  ? "false" : "true";
+               if (parentTagName.search("T") !== -1) {
+                  break;
                }
+
+               var hierarchy = $(this).parentsUntil("body", "div") || [$("body")]; //!! to test! if no div enclosing, then body is used
+               var div = $(hierarchy[0]); // By construction can't be null right?
+
+               paragraghData.$el = $(this);
+               paragraghData.tag = tagName;
+               paragraghData.text = element.textContent;
+               var text_stats = get_text_stats(paragraghData.text);
+               if (text_stats.avg_sentence_length === 0) {
+                  // we don't count sentences with no words inside
+                  break;
+               }
+               paragraghData.sentence_number = text_stats.sentence_number;
+               paragraghData.avg_sentence_length = text_stats.avg_sentence_length;
+               paragraghData.enclosing_div_id = (typeof div.attr("id") === "undefined") ? "" : div.attr("id");
+               paragraghData.enclosing_div_class = (typeof div.attr("class") === "undefined") ? "" : div.attr("class");
+               paragraghData.enclosing_div =
+               ((paragraghData.enclosing_div_id !== "") ? ID_SELECTOR_CHAR + paragraghData.enclosing_div_id : "") + (
+                  (paragraghData.enclosing_div_class !== "") ? CLASS_SELECTOR_CHAR + paragraghData.enclosing_div_class :
+                  "");
+
+               aData.push(paragraghData);
                break;
+
             case elem.TEXT_NODE: //Represents textual content in an element or attribute
+               // that case should never happen because of the processing done prior to the call (wrap in span tags)
+               // for the sake of completeness we could define it though
                logWrite(DBG.TAG.WARNING, "text", element);
                break;
+
             default:
                //do nothing
                logWrite(DBG.TAG.WARNING, "do nothing");

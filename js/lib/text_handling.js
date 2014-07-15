@@ -40,26 +40,33 @@ function getWordAtPoint(elem, x, y) {
 
 function get_text_stats(text) {
    /*
-    Input : text (STRING), can be in several lines. Any HTML tags or else will be considered as normal text
-    Output : an object with two fields:
+    @param text (string) The string text can be in several lines. Any HTML tags or else will be considered as normal text
+    @returns an object with two fields:
     1. sentence_number
     2. avg_sentence_length
 
-    NOTE : The correctness of this would be depending on the particular language. For example in czech, 1.6.2014 is not three sentence but one date
-    IMPROVEMENT : add a parameter for taking language into account
-    LIMIT CASES : text="" -> {0,0}
+    issue : The correctness of this would be depending on the particular language. For example in czech, 1.6.2014 is not three sentence but one date
+    todo : add a parameter for taking language into account
+    LIMIT CASES : text="" -> {1,0}
     */
    //logEntry("get_text_stats");
    if (!text) {
       logWrite(DBG.TAG.ERROR, "invalid parameter text", text);
-      //logExit("get_text_stats");
+      logExit("get_text_stats");
+      return null; //todo: implement a throw error mechanism
    }
 
    // split by . which is not of the kind number followed by a . ->
    // count the number of split
    // for each split, count the number of words
-   var word_number = text.toLowerCase().trim().replace(/[,;.!\?]/g, '').trim().split(/[\s\/]+/g).length;
-   var sentence_number = text.split(".").length-1; // naive algorithm for english, just count number of dots.
+   var words =  text.toLowerCase().replace(/[,;.!\?]/g, '').trim().split(/[\s\/]+/g);
+   var word_number = (words[0].trim().length === 0)? 0 : words.length; // case "" e.g. text with spaces and punct only
+   // todo: write better: this is remove punctuation sign, clean and split
+   var sentence_number = text.split(".").length - 1;
+   // naive algorithm for english, just count number of dots.
+   // even for english could be improved with .+space (\n or " " etc or EOF)
+   // also, we take 1 as sentence number even if there is no ., it could be a sentence not terminated by a . like in a li element
+   // but if there is a . somewhere then . are expected everywhere
    if (sentence_number === 0) {//if there is no DOT in the text, we still count one sentence
       sentence_number = 1;
    }
