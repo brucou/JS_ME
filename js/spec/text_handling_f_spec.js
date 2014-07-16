@@ -72,13 +72,12 @@ define(['chai'], function (chai) {
          });
       });
 
-      describe('getWordAtPoint', function () {
-         it('pending figuring out a way');
-      });
-
-
       describe('clean_text', function () {
          it('no tag title in page');
+      });
+
+      describe('getWordAtPoint', function () {
+         it('pending figuring out a way');
       });
 
       describe('disaggregate_input', function () {

@@ -161,7 +161,7 @@ define(['data_struct'], function (DS) {
                }
             }
          } else {// if function is not cached
-            logWrite(DBG.TAG.INFO, "function is not cached so just executing it");
+            //logWrite(DBG.TAG.INFO, "function is not cached so just executing it");
             exec_f();
          }
 

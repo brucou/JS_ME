@@ -71,7 +71,7 @@ function logEntry(context) {
 
 function logExit(context) {
    //context should be the function from which the logEntry is called
-   DBG.CONTEXT.pop(context);
+   DBG.CONTEXT.pop();
    if (DBG_INDENT_PREFIX.length >= DBG_INDENT_STRING_LENGTH) {
       logWrite(DBG.TAG.TRACE,
                DBG_CHAR_OUT + DBG_INDENT_PREFIX + DBG.SEP.SPACE + context.toString().slice(0, DBG_MAX_CHAR));

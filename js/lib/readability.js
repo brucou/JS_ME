@@ -8,8 +8,11 @@
    // todo: !!test how the callback works in case of error in query on server
    // todo: differ the display in DOM after receiving all results from callback from server (with timeout not to block)
    // issue: analyse why some paragraphs are not parsed : http://prazsky.denik.cz/zpravy_region/lenka-mrazova-dokonalost-je-moje-hodnota-20140627.html
-   // issue: lecourrierinternational what is happening?
    // issue: issue with table tags in the text : cf last link
+// todo: add some visual remarks if there is no text to display http://www.learningjquery.com/2008/12/peeling-away-the-jquery-wrapper/
+   // todo: add some style for code div
+//todo: treat wikipedia as a special case. More special cases? http://en.wikipedia.org/wiki/Perranzabuloe
+// todo: solve case of denik
    // todo: write tests for each function (unit tests) and then for the higher level functions
 
 define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, DS, UL, UT, IO) {
@@ -44,15 +47,8 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
        IMPROVEMENT : look if there is an article tag, in which case take the title and add it first with H1 tag before constructing the page
        */
       logEntry("extract_relevant_text_from_html");
-      var TEXT_SELECTORS_FILTER = ["p", "h1", "h2", "h3", "h4", "h5", "h6"].join(", ");
-      var TABLE_SELECTORS = ["th", "td"].join(", ");
-      var LIST_SELECTORS = ["li"].join(", ");
-      //const TEXT_SELECTORS = [TEXT_SELECTORS_FILTER, LIST_SELECTORS, TABLE_SELECTORS].join(", ");
-      var TEXT_SELECTORS = [TEXT_SELECTORS_FILTER, LIST_SELECTORS].join(", ");
-      var DIV_SELECTORS = "div"; //took off the article under div, otherwise wikipedia does not pass
-      //const DIV_SELECTORS = ["div"];
       var MIN_SENTENCE_NUMBER = 7;
-      var MIN_AVG_AVG_SENTENCE_LENGTH = 10;
+      var MIN_AVG_AVG_SENTENCE_LENGTH = 12;
 
       var $source = create_div_in_DOM(SOURCE).html(html_text);
       $source.hide();
@@ -207,6 +203,9 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
 
       $("script", $el).remove();
       $("head", $el).remove();
+      $("iframe", $el).remove();
+      $("header", $el).remove();
+
       // text_selectors cannot have SPAN inside, otherwise it will recurse infinitely
       // Wrap a span tag around text nodes for easier modification
       // issue: if a span do not have only text, that text outside of tags might fail to be parsed
@@ -240,7 +239,7 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
        */
       logEntry("generateTagAnalysisData");
 
-      var tagHTML = ["p", "h1", "h2", "h3", "h4", "h5", "h6", "li"].join(", ");
+      var tagHTML = ["p"/*, "h1", "h2", "h3", "h4", "h5", "h6"*//*, "li"*/].join(", ");
       // table tags and spans should not be among those tags as it would affect the accurate counting of sentences.
       // table tags : a lots of single words would lower dramatically the average sentence number
       // span tags : One sentence can be separated into several span which falsify the counting
@@ -250,6 +249,7 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
       $("script", $source).remove();
       $("meta", $source).remove();
       $("link", $source).remove();
+      $("iframe", $source).remove();
 
       /* For each paragraph, calculate a series of indicators
        number of sentences
@@ -292,6 +292,11 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
                paragraghData.$el = $(this);
                paragraghData.tag = tagName;
                paragraghData.text = element.textContent;
+               if (paragraghData.text === "") {
+                  logWrite(DBG.TAG.WARNING, "text in element is empty : ignoring");
+                  break;
+               }
+
                var text_stats = get_text_stats(paragraghData.text);
                if (text_stats.avg_sentence_length === 0) {
                   // we don't count sentences with no words inside
@@ -302,9 +307,7 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
                paragraghData.enclosing_div_id = (typeof div.attr("id") === "undefined") ? "" : div.attr("id");
                paragraghData.enclosing_div_class = (typeof div.attr("class") === "undefined") ? "" : div.attr("class");
                paragraghData.enclosing_div =
-               ((paragraghData.enclosing_div_id !== "") ? ID_SELECTOR_CHAR + paragraghData.enclosing_div_id : "") + (
-                  (paragraghData.enclosing_div_class !== "") ? CLASS_SELECTOR_CHAR + paragraghData.enclosing_div_class :
-                  "");
+               get_DOM_select_format_from_class(paragraghData.enclosing_div_id, paragraghData.enclosing_div_class);//we have to take care of the case with several classes
 
                aData.push(paragraghData);
                break;
@@ -320,6 +323,20 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
                logWrite(DBG.TAG.WARNING, "do nothing");
          }
       }
+   }
+
+   function get_DOM_select_format_from_class(div_id, div_class) {
+      /**
+       * This function return a selector from div_id, div_class parameter
+       * For example: <div id=article class= summary    large  > -> #article.summary.large
+       * @param div_id {string}
+       * @param div_class {string}
+       * @type {string}
+       */
+      var id_part = (div_id !== "") ? ID_SELECTOR_CHAR + div_id : "";
+      var class_part = (div_class !== "") ?
+                       [CLASS_SELECTOR_CHAR, clean_text(div_class).replace(/ /g, CLASS_SELECTOR_CHAR)].join("") : "";
+      return [id_part, class_part].join("");
    }
 
    function read_and_add_title_to_$el($source, $dest) {
@@ -363,17 +380,18 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
    }
 
    return {//that's the object returned only for requirejs, e.g. the visible interface exposed
-      make_article_readable          : make_article_readable,
-      extract_relevant_text_from_html: extract_relevant_text_from_html,
-      generateTagAnalysisData        : generateTagAnalysisData,
-      compute_text_stats_group_by_div: compute_text_stats_group_by_div,
-      select_div_to_keep             : select_div_to_keep,
-      highlight_important_words      : highlight_important_words,
-      highlight_proper_text          : highlight_proper_text,
-      highlight_text_in_div          : highlight_text_in_div,
-      read_and_add_title_to_$el      : read_and_add_title_to_$el,
-      getIndexInArray                : getIndexInArray,
-      create_div_in_DOM              : create_div_in_DOM,
-      activate_read_words_over       : activate_read_words_over
+      make_article_readable           : make_article_readable,
+      extract_relevant_text_from_html : extract_relevant_text_from_html,
+      generateTagAnalysisData         : generateTagAnalysisData,
+      compute_text_stats_group_by_div : compute_text_stats_group_by_div,
+      select_div_to_keep              : select_div_to_keep,
+      highlight_important_words       : highlight_important_words,
+      highlight_proper_text           : highlight_proper_text,
+      highlight_text_in_div           : highlight_text_in_div,
+      read_and_add_title_to_$el       : read_and_add_title_to_$el,
+      get_DOM_select_format_from_class: get_DOM_select_format_from_class,
+      getIndexInArray                 : getIndexInArray,
+      create_div_in_DOM               : create_div_in_DOM,
+      activate_read_words_over        : activate_read_words_over
    };
 });
