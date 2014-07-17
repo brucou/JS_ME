@@ -9,15 +9,19 @@
    // todo: I should also remove the repeated . signs (...) in the sentence counting
    // issue: analyse why some paragraphs are not parsed : http://prazsky.denik.cz/zpravy_region/lenka-mrazova-dokonalost-je-moje-hodnota-20140627.html
    // todo: add some style for code div
-   //todo: treat wikipedia as a special case. More special cases? http://en.wikipedia.org/wiki/Perranzabuloe
+   // todo: treat wikipedia as a special case. More special cases? http://en.wikipedia.org/wiki/Perranzabuloe
    // todo: write tests for each function (unit tests) and then for the higher level functions
+   // NOTE: testing strategies. test generateTagAnalysisData, then compute_text_stats_group_by_div then selectedDivs
+   // then do global tests with lemonde etc. and verify that selectedDiv are correct
+   // write several describe each for test page, and then write test for each function in the chain
+   // test also the communication with the server, and the correct return of full text search (use done ()!! async!)
 
 define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, DS, UL, UT, IO) {
    var CLASS_SELECTOR_CHAR = ".";
    var ID_SELECTOR_CHAR = "#";
    var SOURCE = "source";
    var DEST = "destination";
-   var ERROR_DIV="error_message";
+   var ERROR_DIV = "error_message";
 
    function srv_qry_important_words(word, callback) {
       /*
@@ -30,15 +34,28 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
    //var cached_highlight = UT.async_cached(srv_qry_important_words, new DS.CachedValues([])); // no initial cache
    var cached_highlight = UT.async_cached(srv_qry_important_words, null); // we use the non-cached version
 
+   function RD_display_error(error_message) {
+      if (error_message) {
+         $("#" + ERROR_DIV).html(error_message);
+      }
+   }
+
    function make_article_readable(your_url, then_callback) {
+      var error_message = null;
       UL.url_load(your_url, function (html_text) {
          if (html_text) { // the query did not fail to return a non-empty text
             var $dest = extract_relevant_text_from_html(html_text);
+         } else {
+            RD_display_error("<p> ERROR : could not retrieve the webpage </p>");
+            return null;
+         }
+         if ($dest) {
             $dest.appendTo("body");
-            $("#"+ERROR_DIV).empty();
+            $("#" + ERROR_DIV).empty();
             then_callback();
          } else {
-            $("#"+ERROR_DIV).html("<p> ERROR : could not retrieve the webpage </p>");
+            RD_display_error("<p> ERROR : nothing to display </p><p> Possible cause : no important paragraph could be identified </p>");
+            return null;
          }
       });
    }
@@ -51,7 +68,7 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
        */
       logEntry("extract_relevant_text_from_html");
       var MIN_SENTENCE_NUMBER = 7;
-      var MIN_AVG_AVG_SENTENCE_LENGTH = 12;
+      var MIN_AVG_AVG_SENTENCE_LENGTH = 13;
 
       var $source = create_div_in_DOM(SOURCE).html(html_text);
       $source.hide();
@@ -83,6 +100,11 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
       /* Identify the div classes to keep in the DOM */
       logWrite(DBG.TAG.INFO, "Identify the div classes to keep in the DOM");
       var selectedDivs = select_div_to_keep(aDivRow, MIN_SENTENCE_NUMBER, MIN_AVG_AVG_SENTENCE_LENGTH);
+      if (selectedDivs.length === 0) {
+         logWrite(DBG.TAG.WARNING, "no div selected!!");
+         logExit("extract_relevant_text_from_html");
+         return null;
+      }
 
       logWrite(DBG.TAG.INFO, "Reading and adding title");
       read_and_add_title_to_$el($source, $dest);
