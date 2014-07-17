@@ -2,19 +2,18 @@
  * Created by bcouriol on 30/05/14.
  */
 
-// jquery.xdomainajax.js  ------ from padolsey
+   // jquery.xdomainajax.js  ------ from padolsey
 
-define(['jquery'],
-       function ($) {
+define(['jquery'], function ($) {
           $.ajax = (function (_ajax) {
 
-             var protocol = location.protocol,
-                hostname = location.hostname,
-                exRegex = RegExp(protocol + '//' + hostname),
-                YQL = 'http' + (/^https/.test(protocol) ? 's' : '') +
-                      '://query.yahooapis.com/v1/public/yql?callback=?',
-                query = 'select * from html where url="{URL}" and xpath="*"';
-             console.log("YQL : " + YQL);
+             var protocol = location.protocol, hostname = location.hostname, exRegex = RegExp(protocol + '//' +
+                                                                                              hostname), YQL = 'http' +
+                                                                                                               (/^https/.test(protocol) ?
+                                                                                                                's' :
+                                                                                                                '') +
+                                                                                                               '://query.yahooapis.com/v1/public/yql?callback=?', query = 'select * from html where url="{URL}" and xpath="*"';
+             //console.log("YQL : " + YQL);
 
              function isExternal(url) {
                 return !exRegex.test(url) && /:\/\//.test(url);
@@ -32,12 +31,8 @@ define(['jquery'],
                    o.dataType = 'json';
 
                    o.data = {
-                      q     : query.replace(
-                         '{URL}',
-                         url + (o.data ?
-                                (/\?/.test(url) ? '&' : '?') + jQuery.param(o.data)
-                            : '')
-                      ),
+                      q     : query.replace('{URL}',
+                                            url + (o.data ? (/\?/.test(url) ? '&' : '?') + jQuery.param(o.data) : '')),
                       format: 'xml'
                    };
 
@@ -51,14 +46,17 @@ define(['jquery'],
                    o.success = (function (_success) {
                       return function (data) {
 
-                         if (_success) {
+                         if (_success && data && data.results && data.results.length > 0) {
                             // Fake XHR callback.
                             _success.call(this, {
-                               responseText: data.results[0]
-                                  // YQL screws with <script>s
+                               responseText: data.results[0]// YQL screws with <script>s
                                   // Get rid of them
                                   .replace(/<script[^>]+?\/>|<script(.|\s)*?\/script>/gi, '')
                             }, 'success');
+                         } else {
+                            _success.call(this, {
+                               responseText: null//return null if for some reason there is not text obtained
+                            }, 'error');
                          }
 
                       };
@@ -78,7 +76,7 @@ define(['jquery'],
                 $.ajax({
                           url    : your_url,
                           type   : 'GET',
-                          success: function (res) {
+                          success: function (res, error) {
                              var html_text = res.responseText;
                              // then you can manipulate your text as you wish
                              // NOTE: the html is modified to be more correct (for instance <p> tags are added to table contents

@@ -2,17 +2,14 @@
  * Created by bcouriol on 5/06/14.
  */
 
-   // issue: deal with the error when the page cannot be loaded (undefined)
    // issue: deal with lemonde, some words give null when you click on it?? Seems to happen after anchor links : replace anchor links by span class and copy the style of links
    // todo : disable click on links anyways - interacts with word info functionality
    // todo: !!test how the callback works in case of error in query on server
    // todo: differ the display in DOM after receiving all results from callback from server (with timeout not to block)
+   // todo: I should also remove the repeated . signs (...) in the sentence counting
    // issue: analyse why some paragraphs are not parsed : http://prazsky.denik.cz/zpravy_region/lenka-mrazova-dokonalost-je-moje-hodnota-20140627.html
-   // issue: issue with table tags in the text : cf last link
-// todo: add some visual remarks if there is no text to display http://www.learningjquery.com/2008/12/peeling-away-the-jquery-wrapper/
    // todo: add some style for code div
-//todo: treat wikipedia as a special case. More special cases? http://en.wikipedia.org/wiki/Perranzabuloe
-// todo: solve case of denik
+   //todo: treat wikipedia as a special case. More special cases? http://en.wikipedia.org/wiki/Perranzabuloe
    // todo: write tests for each function (unit tests) and then for the higher level functions
 
 define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, DS, UL, UT, IO) {
@@ -20,6 +17,7 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
    var ID_SELECTOR_CHAR = "#";
    var SOURCE = "source";
    var DEST = "destination";
+   var ERROR_DIV="error_message";
 
    function srv_qry_important_words(word, callback) {
       /*
@@ -34,9 +32,14 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
 
    function make_article_readable(your_url, then_callback) {
       UL.url_load(your_url, function (html_text) {
-         var $dest = extract_relevant_text_from_html(html_text);
-         $dest.appendTo("body");
-         then_callback();
+         if (html_text) { // the query did not fail to return a non-empty text
+            var $dest = extract_relevant_text_from_html(html_text);
+            $dest.appendTo("body");
+            $("#"+ERROR_DIV).empty();
+            then_callback();
+         } else {
+            $("#"+ERROR_DIV).html("<p> ERROR : could not retrieve the webpage </p>");
+         }
       });
    }
 
