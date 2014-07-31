@@ -638,25 +638,26 @@ define(['data_struct'], function (DS) {
       return !isNaN(text);
    }
 
+
    return {
-      isArray       : isArray,
-      caching       : caching,
-      trimInput     : trimInput,
-      isNotEmpty    : isNotEmpty,
-      inspect       : inspect,
-      isRegExp      : isRegExp,
-      isDate        : isDate,
-      isError       : isError,
-      timestamp     : timestamp,
-      inherits      : inherits,
-      _extend       : _extend,
-      hasOwnProperty: hasOwnProperty,
-      isString      : isString,
-      isPunct       : isPunct,
-      isFunction    : isFunction,
-      sPrintf       : String.format,
-      timeStamp     : timeStamp,
-      isNumberString: isNumberString,
-      async_cached  : async_cached
+      isArray         : isArray,
+      caching         : caching,
+      trimInput       : trimInput,
+      isNotEmpty      : isNotEmpty,
+      inspect         : inspect,
+      isRegExp        : isRegExp,
+      isDate          : isDate,
+      isError         : isError,
+      timestamp       : timestamp,
+      inherits        : inherits,
+      _extend         : _extend,
+      hasOwnProperty  : hasOwnProperty,
+      isString        : isString,
+      isPunct         : isPunct,
+      isFunction      : isFunction,
+      sPrintf         : String.format,
+      timeStamp       : timeStamp,
+      isNumberString  : isNumberString,
+      async_cached    : async_cached
    }
 });

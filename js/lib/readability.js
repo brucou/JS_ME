@@ -11,8 +11,10 @@
    // todo: add some style for code div
    // todo: treat wikipedia as a special case. More special cases? http://en.wikipedia.org/wiki/Perranzabuloe
    // todo: write tests for each function (unit tests) and then for the higher level functions
-   // NOTE: testing strategies. test generateTagAnalysisData, then compute_text_stats_group_by_div then selectedDivs
-   // then do global tests with lemonde etc. and verify that selectedDiv are correct
+   // NOTE: testing strategies. then compute_text_stats_group_by_div then selectedDivs (later)
+   // todo : test highlight_important_words
+   // todo: then do global tests with lemonde etc. and verify that selectedDiv are correct (possibly load them from file)
+   // todo: include the title in the highlighting of words
    // write several describe each for test page, and then write test for each function in the chain
    // test also the communication with the server, and the correct return of full text search (use done ()!! async!)
 
@@ -28,8 +30,10 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
        Word: the word to question the server with
        callback: executed when the server has finished its processing
        */
+      logEntry("srv_qry_important_words");
       rpc_socket.emit('highlight_important_words', word, callback);
-   }
+         logExit("srv_qry_important_words");
+      }
 
    //var cached_highlight = UT.async_cached(srv_qry_important_words, new DS.CachedValues([])); // no initial cache
    var cached_highlight = UT.async_cached(srv_qry_important_words, null); // we use the non-cached version
@@ -41,7 +45,7 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
    }
 
    function make_article_readable(your_url, then_callback) {
-      var error_message = null;
+         var error_message = null;
       UL.url_load(your_url, function (html_text) {
          if (html_text) { // the query did not fail to return a non-empty text
             var $dest = extract_relevant_text_from_html(html_text);
@@ -74,6 +78,7 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
       $source.hide();
       $source.appendTo($("body")); //apparently it is necessary to add it to body to avoid having head and doctype etc tag added
       var $dest = create_div_in_DOM(DEST);
+      logWrite(DBG.TAG.INFO, "Compute tag stats");
       var aData = generateTagAnalysisData($source);
 
       /* A.
@@ -87,7 +92,7 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
       /* A1.
        First compute the tag and text stats grouped by div
        */
-      logWrite(DBG.TAG.INFO, "First compute the tag and text stats grouped by div");
+      logWrite(DBG.TAG.INFO, "Compute tag stats grouped by div");
       var aDivRow = compute_text_stats_group_by_div(aData);
 
       /* we finished exploring, now gather the final stats (averages)
@@ -195,34 +200,38 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
       }
    }
 
-   function highlight_proper_text(sWords, $el) {
-      /*
-       sWords : sentence whose words are to be highlit
-       $el : jQuery element that contains sWords in its inner text
-       cvCache : cache object that keeps a memory of already processed words
-       srv_query : the query executed on the server that returns information on the importance of the word
+   function highlight_proper_text($el, then_callback) {
+      /**
+       * Highlights important words found in sWords, and signals them in $el
+       * Important : this function expects to be called with a normal text, e.g. no html tags
+       * If html tags are present, they will be parsed as regular text
+       @param sWords {String}: sentence whose words are to be highlit
+       @param $el {Object}: jQuery element that contains sWords in its inner text
+       @param then_callback {function} : callback executed after words habve been highlighted
        */
       logEntry("highlight_proper_text");
-      /*
-       var aInput = disaggregate_input(sWords);
-       var osStore = new DS.OutputStore();
-       osStore.countDown = aInput.length;
-       */
-      var osStore = new DS.OutputStore();
-      osStore.countDown = 1;
-      osStore.propagateResult = function () {
+
+      var sWords =$el.text();
+      var osStore = new DS.OutputStore({countDown: 1, propagateResult: function () {
          logEntry("propagateResult");
-         $el.html(osStore.toString());
+         var highlit_text = osStore.toString();
+         $el.html(highlit_text);
+         if (then_callback) {
+            then_callback(sWords, highlit_text, $el);
+         }
          logExit("propagateResult");
-      };
-      /*aInput.map(function (element) {
-       cached_highlight(element, osStore);
-       }); //ojo it needs to apply the map function in order!!*/
+      }
+                                       });
       cached_highlight(sWords, osStore);
       logExit("highlight_proper_text");
    }
 
-   function highlight_text_in_div($el) {
+   function highlight_text_in_div($el, then_callback) {
+      /**
+       * Highlights important words found in $el,
+       * Works by wrapping all text between given set of tags in a span class
+       * and later analyze text in each children tag of $el for important words
+       */
       logEntry("highlight_text_in_div");
       var TEXT_SELECTORS = ["p", "h1", "h2", "h3", "h4", "h5", "h6", "li"].join(", ");
 
@@ -244,13 +253,13 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
       var length = $el.children().length;
       if (length == 0) {
          logWrite(DBG.TAG.DEBUG, "processing element without child", $el.tagName, $el.text());
-         highlight_proper_text($el.text(), $el);
+         highlight_proper_text($el, then_callback);
       } else {
          // go through recursively into the children
          logWrite(DBG.TAG.DEBUG, "", "tag", $el.get(0).tagName, "has ", length, "children", "processing them");
 
          $el.children().each(function () {
-            highlight_text_in_div($(this), TEXT_SELECTORS);
+            highlight_text_in_div($(this), then_callback);
          });
       }
       logExit("highlight_text_in_div");
@@ -374,7 +383,7 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
    }
 
    function getIndexInArray(aArray, field_to_search, value) {
-      var i = 0, iIndex = -1;
+      var i, iIndex = -1;
       for (i = 0; i < aArray.length; i++) {
          if (aArray[i][field_to_search] === value) {
             iIndex = i;

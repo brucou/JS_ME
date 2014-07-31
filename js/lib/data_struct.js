@@ -16,7 +16,7 @@ define(['utils'], function (UT) {
 
          this.$el = init_object.$el || null;
          this.tag = init_object.tag;
-         this.text = init_object.text // text content of the tag
+         this.text = init_object.text; // text content of the tag
          this.sentence_number = init_object.sentence_number;
          this.avg_sentence_length = init_object.avg_sentence_length; //average length of sentences in words
          this.enclosing_div = init_object.enclosing_div; // first enclosing div
@@ -192,8 +192,15 @@ define(['utils'], function (UT) {
       OutputStore: function OutputStore(init) {
          // constructor
          init = init || {countDown: 1, aStore: []}; // default parameters, execute action after 1 value is stored
-         this.aStore = init.aStore;
-         this.countDown = init.countDown;
+
+         this.aStore = init.aStore || [];
+         this.countDown = init.countDown || 1;
+         this.propagateResult = init.propagateResult || function () {
+            // here should be upadated by the caller to reflect actions to perform when
+            // all async calls have returned with their results in the store
+            logWrite(DBG.TAG.WARNING, "no propagateResult function!");
+         };
+
          this.toString = function () {
             // print the concatenation of all values in storage
             var formatString = "";
@@ -202,7 +209,7 @@ define(['utils'], function (UT) {
                   if (UT.isPunct(element)) {
                      var SEP_CHAR = "";
                   } else {
-                     var SEP_CHAR=" ";
+                     var SEP_CHAR = " ";
                   }
                   formatString = [formatString, element.toString()].join(SEP_CHAR);
                }
@@ -226,11 +233,6 @@ define(['utils'], function (UT) {
                this.propagateResult();
             }
             logExit("invalidateAt");
-         };
-         this.propagateResult = function () {
-            // here should be upadated by the caller to reflect actions to perform when
-            // all async calls have returned with their results in the store
-            logWrite(DBG.TAG.WARNING, "no propagateResult function!");
          };
          this.push = function (value) {
             // add a value in the store and return an index to it

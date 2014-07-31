@@ -39,7 +39,7 @@ function initialize_server() {
    // Where to find the view files
    app.set('views', __dirname + '/views'); //__dirname : directory in which the currently executing script resides
 
-   app.use(express.static(__dirname+"/../")); //we point to the home directory of the project to get any files there
+   app.use(express.static(__dirname + "/../")); //we point to the home directory of the project to get any files there
 
    // A route for the home page - will render a view
    app.get('/', function (req, res) {// won't execute as the static file loader of express will use index.html instead
@@ -101,6 +101,11 @@ function wrap_highlight_span(word) {
 
 // initialize database connection and
 // one-time variable  linked to the database
+
+// io.set('log level', 2); for socket.io before 1.0
+io.on('connect', function (socket) {
+   console.log('Client connected no namespace');
+});
 
 io.of(RPC_NAMESPACE).on('connect', function (socket) {
    console.log('Client connected');

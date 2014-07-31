@@ -77,14 +77,19 @@ function get_text_stats(text) {
 }
 
 function clean_text(sWords) {
+   /*
+   @param sWords {string} the string to be clean
+   returns removes extra spaces and new lines by a single space. Also remove trailing and leading spaces
+    */
    return sWords.replace(/(\r\n|\n|\r)/gm, " ").replace(/\s+/g, ' ').trim();
 }
 
 function disaggregate_input(sWords) {
    /* for now, just takes a string and returns an array of word tokens
     Consecutive spaces are reduced to one
-    Trailing and leading spaces are taking out
+    Trailing and leading spaces signs are taken out
     That includes characters such as \n \r, etc. anything considered spaces by regexp
+    puntuation signs are isolated
     Tested on czech, french and english language characters
     nice to have : do further testing of international language support
     */
