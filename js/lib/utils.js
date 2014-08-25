@@ -103,28 +103,31 @@ define(['data_struct'], function (DS) {
       /*
        todo TO REWRITE!!!
        Function who takes a function and returns an cached version of that function which memorized past computations
-       if bool_cached is set, then the function is memoized to remember previous computations. To use only when it makes sense
-       as there is no mechanism yet to remove value from the cache. Hence the cache only grows with each call. That
-       can lead to some memory problems in the current implementation
-       if bool_cached is not set, then the asynchronous function is called, result values are set in the callback
+       A cache object can be passed as a parameter. That cache object must implement the following interface:
+       - getItem
+       - setItem
+       In addition it can also implement:
+       - clear
+       - toHtmlString
+       - removeItem
+       - removeWhere
+       - size
+       - stats
        The OutputStore functionality equals to that of a stream. Each character arrival (value) provokes
        a read action (function call), when the end is reached (countDown) the gathered charactered are passed to a function
        (propagateResult)
        @param f: the function to be applied. f takes an object and output another one
-       @param initial_cache : an array of valueMap object which are simply couples (x,y) where y=f(x)
-       NOTE: f: x -> y, but caching(f): [x] -> [y].
-       IMPROVEMENT : possibility to index the cache! But would make sense only for a large  set of value right?
-       right, I am using the in-house javascript property mechanism as a native substitute for a hash-mapped cache
+       @param initial_cache : a specific cache implemention OR if none, an array of valueMap object which are simply couples (x,y) where y=f(x), OR []
+       IMPROVEMENT : possibility to index or hashmap the cache! But would make sense only for a large  set of value right?
        */
       // todo: refactor to separate the OutputStore functionality out in a higher-order function
-      // f -> async_cached(f) : only the caching functionality
-      // f -> reduce(f) : only the aggregation of X f results into one results
 
-      var cvCachedValues; // CachedValues is a Map array, it needs to be able to have property through CachedValues[prop] = value
+      // Default implementation of CachedValues is an array, it needs to be able to have property through CachedValues[prop] = value
+      var cvCachedValues;
 
       if (initialCache && isArray(initialCache)) {
          // give the possibility to initialize the cachedvalues cache object with an array, it is easier
-         cvCachedValues = new DS.CachedValues(initialCache);
+         cvCachedValues = new CachedValues(initialCache);
       } else if (!initialCache) {//no cache passed as parameter
          logWrite(DBG.TAG.INFO, "async function will not be cached");
       } else {
@@ -144,21 +147,17 @@ define(['data_struct'], function (DS) {
          // todo : !! also applies to "", check that
          //logWrite(DBG.TAG.DEBUG, "cvCachedValues", inspect(cvCachedValues));
          if (cvCachedValues) { // if function is cached
-            var aValue = cvCachedValues.getValueFromCache(value);
-            var isInCache = !(typeof aValue.notInCache !== 'undefined');
-            if (isInCache) {
+            //var aValue = cvCachedValues.getValueFromCache(value);
+            var fValue = cvCachedValues.getItem(value);
+            //var isInCache = !(typeof aValue.notInCache !== 'undefined');
+            if (fValue) {
                // value already cached, no callback, no execution, just assigning the value to the output array
-               logWrite(DBG.TAG.INFO, "Computation for value already in cache!", inspect(value), aValue);
-               updateOutputStore(OutputStore, index, aValue);
-               fvalue = aValue;
+               logWrite(DBG.TAG.INFO, "Computation for value already in cache!", inspect(value), fValue);
+               updateOutputStore(OutputStore, index, fValue);
+               //fvalue = aValue;
             } else { // not in cache so cache it, except if it is a number
-               if (isNumberString(value)) {
-                  logWrite(DBG.TAG.INFO, "Processing number or empty '' so leaving it intact!", value, value);
-                  callback.apply(null, [false, {data: value}]);
-               } else {
-                  exec_f();
-                  cvCachedValues.putValueInCache(value, fvalue);
-               }
+               exec_f();
+               cvCachedValues.setItem(value, fvalue);
             }
          } else {// if function is not cached
             //logWrite(DBG.TAG.INFO, "function is not cached so just executing it");
@@ -183,9 +182,9 @@ define(['data_struct'], function (DS) {
             logEntry("callback");
             if (cvCachedValues) {
                if (!(err)) {
-                  cvCachedValues.putValueInCache(value, result.data);
+                  cvCachedValues.setItem(value, result.data);
                } else {
-                  cvCachedValues.putValueInCache(value, null);
+                  cvCachedValues.setItem(value, null);
                }
             }
             if (err) {
@@ -638,26 +637,226 @@ define(['data_struct'], function (DS) {
       return !isNaN(text);
    }
 
+   function CachedValues(arrayInit) {
+      // constructor
+      /* We are taking advantage here of the native hashmap implementation of javascript (search in O(1))
+       On the down side, we might loose some efficiency in terms of storage, as each hash is a full-fledged new object.
+       NOTE: keys can be any valid javascript string: cf. https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String
+       NOTE: it is preferable to have keys trimmed and removed extra spaces to avoid unexpected or confusing results
+       nice to have: A better implementation could be to use indexedDb who has indexes, which can speed up searches
+       However indexedDB currently has an asynchronous API, which makes it difficult to use in connection with
+       synchronous functions
+       */
+      self = this;
+      this.internalStore = {};
+      this.secondaryStore = [];
+      this.jsObjectInternals =
+      ["__proto__", "__noSuchMethod__", "__count__", "__parent__", "__defineGetter__", "__defineSetter__",
+       "__lookupGetter__", "__lookupSetter__", "hasOwnProperty", "constructor", "isPrototypeOf", "propertyIsEnumerable",
+       "toLocaleString", "toString", "valueOf"
+         /* , "toSource", "eval", "watch", "unwatch" // not in js core anymore */
+      ]; // this is the list of the function that cannot be used as keys in an object as they are already reserved
+      this.jsOI_length = this.jsObjectInternals.length;
+
+      this.getItem = function (key) {
+         // return the fvalue if there, otherwise return false
+         // be careful that fvalue not be a boolean otherwise it could conflict
+         var isVinC = this.isValueInCache(key);
+         if (isVinC.bool) {
+            // that should be the normal case if that function is called
+            var isRes = this.isReservedKey(key);
+            if (isRes.bool) {
+               // in secondary store
+               return this.secondaryStore[isRes.index];
+            } else {
+               // in primary store
+               return this.internalStore[key];
+            }
+         } else {
+            // the function was called but nothing was found in cache!!
+            return null;
+         }
+      };
+      this.setItem = function (key, fvalue) {
+         // check that the key is not already in the cache, if it is replace current by the new fvalue
+         // e.g. cache is a indexed set
+         // so we have a new row, or an update row operation here
+         // returns false if error, true if operation was successful
+         logEntry("putValueInCache");
+         logWrite(DBG.TAG.DEBUG, "isValueInCache", inspect(this.isValueInCache(key).bool));
+         if (this.isValueInCache(key).bool) {
+            logWrite(DBG.TAG.DEBUG, "calling updateValueInCache", key, fvalue);
+            logExit("putValueInCache");
+            return this.updateValueInCache(key, fvalue);
+         } else {
+            // not in cache, add it
+            // but add it where?
+            var isRes = this.isReservedKey(key);
+            logWrite(DBG.TAG.DEBUG, "not in cache");
+            logWrite(DBG.TAG.DEBUG, "isReservedKey?", isRes.bool, isRes.index);
+            if (isRes.bool) {
+               logWrite(DBG.TAG.DEBUG, "adding to secondary Store");
+               this.secondaryStore[isRes.index] = fvalue;
+               logExit("putValueInCache");
+               return true;
+            } else {
+               // add it to the internal store
+               logWrite(DBG.TAG.DEBUG, "adding to internal store");
+               this.internalStore[key] = fvalue;
+               logExit("putValueInCache");
+               return true;
+            }
+         }
+      };
+
+      this.isValueInCache = function (key) {
+         // returns true if the key passed in parameter is already in the cache
+         // first, test if the key is one of the reserved keys, because it will always match is applied to any object
+         var isRes = this.isReservedKey(key);
+         if (isRes.bool) {
+            // the key is one of the reserved properties, look up the secondary store
+            if (this.secondaryStore[isRes.index]) {
+               return {isInternalStore: false, bool: true};
+            } else {
+               return {isInternalStore: false, bool: false};
+            }
+         }
+         if (!!this.internalStore[key]) {
+            // key is already cached
+            return {isInternalStore: true, bool: true};
+         }
+         return {isInternalStore: true, bool: false};
+      };
+
+      this.updateValueInCache = function (key, fvalue) {
+         // updates the value referenced by key in the cache
+         // returns false if error, true if operation was successful
+         // NOTE : this is an internal function, it can only be called by putValueInCache, it is supposed that the
+         // value is in the cache already
+         // we keep it that way in case of a change of implementation towards database which have a real update function
+
+         var isVinC = this.isValueInCache(key);
+         if (isVinC.bool) {// it should be in cache if we arrive, but double checking
+            // already in cache, we update the value
+            if (isVinC.isInternalStore) {
+               // update internalStore
+               this.internalStore[key] = fvalue;
+               return true;
+            } else {
+               // it is in secondary store, update it there
+               var isRes = this.isReservedKey(key);
+               if (isRes.bool) {// should be, otherwise error
+                  // the key is one of the reserved properties, update in the secondary store
+                  this.secondaryStore[isRes.index] = fvalue;
+                  return true;
+               }
+            }
+         } else {
+            // if we arrive here, it is because it is not in either primary and secondary store, so return false
+            return false;
+         }
+      };
+
+      this.isReservedKey = function (key) {
+         // returns true if the key is one of the reserved ones in jsObjectInternals
+         for (var i = 0; i < this.jsOI_length; i++) {
+            if (this.jsObjectInternals[i] === key) {
+               return {index: i, bool: true};
+            }
+         }
+         return {index: -1, bool: false};
+      };
+
+      this.init = function (arrayInit) {
+         logEntry("CachedValues.init");
+         logWrite(DBG.TAG.DEBUG, "input", inspect(arrayInit));
+         if (arrayInit && isArray(arrayInit)) {
+            arrayInit.forEach(function (element, index, array) {
+               logWrite(DBG.TAG.DEBUG, "element", inspect(element), element["key"], element["value"]);
+               self.putValueInCache(element["key"], element["value"]);
+            })
+         } else {
+            logWrite(DBG.TAG.ERROR, "function init called with a parameter that is not an array");
+         }
+         logExit("CachedValues.init");
+      };
+
+      this.init(arrayInit);
+   }
+
+   function OutputStore(init) {
+      // constructor
+      init = init || {countDown: 1, aStore: []}; // default parameters, execute action after 1 value is stored
+
+      this.aStore = init.aStore || [];
+      this.countDown = init.countDown || 1;
+      this.propagateResult = init.propagateResult || function () {
+         // here should be upadated by the caller to reflect actions to perform when
+         // all async calls have returned with their results in the store
+         logWrite(DBG.TAG.WARNING, "no propagateResult function!");
+      };
+
+      this.toString = function () {
+         // print the concatenation of all values in storage
+         var formatString = "";
+         this.aStore.forEach(function (element, index, array) {
+            if (element) {
+               if (isPunct(element)) {
+                  var SEP_CHAR = "";
+               } else {
+                  var SEP_CHAR = " ";
+               }
+               formatString = [formatString, element.toString()].join(SEP_CHAR);
+            }
+         });
+         return formatString;
+      };
+      this.setValueAt = function (pos, value) {
+         // set some value at index pos
+         this.aStore[pos] = value;
+      };
+      this.getValueAt = function (pos) {
+         // get the value at index pos
+         return this.aStore[pos];
+      };
+      this.invalidateAt = function (pos) {
+         // update the counter to reflect callback who already returned
+         // if all callbacks returned then we can execute the final function to propagate results where it matters
+         logEntry("invalidateAt");
+         this.countDown = this.countDown - 1;
+         if (this.countDown == 0) {
+            this.propagateResult();
+         }
+         logExit("invalidateAt");
+      };
+      this.push = function (value) {
+         // add a value in the store and return an index to it
+         this.aStore.push(value);
+         return this.aStore.length - 1;
+      }
+   }
 
    return {
-      isArray         : isArray,
-      caching         : caching,
-      trimInput       : trimInput,
-      isNotEmpty      : isNotEmpty,
-      inspect         : inspect,
-      isRegExp        : isRegExp,
-      isDate          : isDate,
-      isError         : isError,
-      timestamp       : timestamp,
-      inherits        : inherits,
-      _extend         : _extend,
-      hasOwnProperty  : hasOwnProperty,
-      isString        : isString,
-      isPunct         : isPunct,
-      isFunction      : isFunction,
-      sPrintf         : String.format,
-      timeStamp       : timeStamp,
-      isNumberString  : isNumberString,
-      async_cached    : async_cached
+      isArray       : isArray,
+      caching       : caching,
+      trimInput     : trimInput,
+      isNotEmpty    : isNotEmpty,
+      inspect       : inspect,
+      isRegExp      : isRegExp,
+      isDate        : isDate,
+      isError       : isError,
+      timestamp     : timestamp,
+      inherits      : inherits,
+      _extend       : _extend,
+      hasOwnProperty: hasOwnProperty,
+      isString      : isString,
+      isPunct       : isPunct,
+      isFunction    : isFunction,
+      sPrintf       : String.format,
+      timeStamp     : timeStamp,
+      isNumberString: isNumberString,
+      async_cached  : async_cached,
+      OutputStore   : OutputStore,
+      CachedValues  : CachedValues
    }
 });

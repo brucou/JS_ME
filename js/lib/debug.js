@@ -7,7 +7,7 @@
 
 // done: fine-grained tuning by tag and function of log displaying
 // done: added a timeStamp function to log time of messages
-   // nice to have: changer tous les DBG_ en DBG.
+// nice to have: changer tous les DBG_ en DBG.
 
 var DBG_INDENT_PREFIX = "";
 const DBG_INDENT_STRING = "--";
@@ -26,17 +26,17 @@ var DBG = {
       ARG  : ":: ",
       NAME : ":: "},
    CONFIG : {
-      ALL       : true,
-      BY_DEFAULT: false // by default show no logs,
+      DETAIL    : true,
+      BY_DEFAULT: false // if DETAIL is false, then the by_default behaviour applies for all.
    },
    // empty object by default, should have values of the form :
    // func_name : true to enable detailed config, false defers to default values applyng to all
    // value all if set works for all function contexts
-   CONTEXT: ["ALL"]
+   CONTEXT: []
 };
 
 function setConfig(tag, bool_flag, by_default) {
-   DBG.CONFIG[tag] = {ALL: bool_flag, BY_DEFAULT: by_default.by_default};
+   DBG.CONFIG[tag] = {DETAIL: bool_flag, BY_DEFAULT: by_default.by_default};
 }
 
 setConfig(DBG.TAG.TRACE, false, {by_default: true}); // always trace
@@ -95,14 +95,20 @@ function logWrite(tag, text, arg) {
     Add parameters validation : text can't be null or undefined
     */
    var context = lastElemArray(DBG.CONTEXT);
+   var DETAIL = "DETAIL";
+
+   if (typeof(DBG.CONFIG[tag][context]) === 'undefined' || DBG.CONFIG[tag][context] === null) {
+      DBG.CONFIG[tag][context] = DBG.CONFIG[tag][BY_DEFAULT];
+   }
+
    // if detailed configs are allowed then look at it, if false don't do anything
-   if (DBG.CONFIG[ALL] && DBG.CONFIG[tag][ALL] && !DBG.CONFIG[tag][context]) {
+   if (DBG.CONFIG[DETAIL] && DBG.CONFIG[tag][DETAIL] && !DBG.CONFIG[tag][context]) {
       return;
    }
-   if (DBG.CONFIG[ALL] && !DBG.CONFIG[tag][ALL] && !DBG.CONFIG[tag][BY_DEFAULT]) {
+   if (DBG.CONFIG[DETAIL] && !DBG.CONFIG[tag][DETAIL] && !DBG.CONFIG[tag][BY_DEFAULT]) {
       return;
    }
-   if (!DBG.CONFIG[ALL] && !DBG.CONFIG[ALL][BY_DEFAULT]) {
+   if (!DBG.CONFIG[DETAIL] && !DBG.CONFIG[DETAIL][BY_DEFAULT]) {
       return;
    }
    logForceWrite.apply(null, arguments);
@@ -110,6 +116,8 @@ function logWrite(tag, text, arg) {
 
 function logForceWrite(tag, text, arg) {
    var i;
+   var context = lastElemArray(DBG.CONTEXT);
+   text = ['[',context, ']', ' ', text].join("");
    if (arg) {
       for (i = 2; i != arguments.length; i++) {
          if (!arguments[i]) {

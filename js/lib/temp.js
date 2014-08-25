@@ -3,29 +3,6 @@
  */
 /* holds copy of texts for temporary holding */
 
-/*
-logWrite("INFO", "element", element.nodeType, element.tagName, $(this).attr("id"),
-         element.textContent.slice(0, 30), hierarchy[0] ? $(hierarchy[0]).attr("class") : "??");
-   */
-
-/*
- Unit Testing of utils
-var gre;
-// test isArray
-logWrite(DBG.TAG.DEBUG, "is Array []", isArray([]));
-logWrite(DBG.TAG.DEBUG, "is Array (null)", isArray(null));
-logWrite(DBG.TAG.DEBUG, "is Array (undefined)", isArray(gre));
-//OK!!
-
-var g = caching(function (x) {
-   return 2 * x;
-}, []);
-
-
-logWrite(DBG.TAG.DEBUG, "Testing with 2, 1, 10", g([2, 1, 10]));
-logWrite(DBG.TAG.DEBUG, "the same values second time and new one", g([2, 1, 10, 3]));
- */
-
 function clean_up(html_text) {
    /*
     currently only removes the <head> tag
@@ -54,65 +31,6 @@ postgres practice
 //http://sqlfiddle.com/#!15/34dd2/58
    /* SELECT to_tsvector('fat cats ate fat rats') @@ to_tsquery('fat & rat'); */
 /*
-table creation:
-
-   CREATE TABLE aWordList (
-   word        varchar(40) CONSTRAINT firstkey PRIMARY KEY
-);
-
-insert into aWordList (word)  values ('a');
-insert into aWordList (word)  values ('se');
-insert into aWordList (word)  values ('v');
-insert into aWordList (word)  values ('na');
-insert into aWordList (word)  values ('je');
-insert into aWordList (word)  values ('že');
-insert into aWordList (word)  values ('s');
-insert into aWordList (word)  values ('z');
-insert into aWordList (word)  values ('o');
-insert into aWordList (word)  values ('do');
-insert into aWordList (word)  values ('to');
-insert into aWordList (word)  values ('i');
-insert into aWordList (word)  values ('k');
-insert into aWordList (word)  values ('ve');
-insert into aWordList (word)  values ('si');
-insert into aWordList (word)  values ('pro');
-insert into aWordList (word)  values ('za');
-insert into aWordList (word)  values ('by');
-insert into aWordList (word)  values ('ale');
-insert into aWordList (word)  values ('jsem');
-insert into aWordList (word)  values ('jako');
-insert into aWordList (word)  values ('po');
-insert into aWordList (word)  values ('V');
-insert into aWordList (word)  values ('tak');
-insert into aWordList (word)  values ('jsou');
-insert into aWordList (word)  values ('které');
-insert into aWordList (word)  values ('od');
-insert into aWordList (word)  values ('který');
-insert into aWordList (word)  values ('jeho');
-insert into aWordList (word)  values ('však');
-insert into aWordList (word)  values ('už');
-insert into aWordList (word)  values ('nebo');
-insert into aWordList (word)  values ('byl');
-insert into aWordList (word)  values ('jen');
-insert into aWordList (word)  values ('co');
-insert into aWordList (word)  values ('bude');
-insert into aWordList (word)  values ('aby');
-insert into aWordList (word)  values ('u');
-insert into aWordList (word)  values ('jak');
-insert into aWordList (word)  values ('až');
-insert into aWordList (word)  values ('A');
-insert into aWordList (word)  values ('než');
-insert into aWordList (word)  values ('má');
-insert into aWordList (word)  values ('jsme');
-insert into aWordList (word)  values ('ze');
-insert into aWordList (word)  values ('která');
-insert into aWordList (word)  values ('když');
-insert into aWordList (word)  values ('při');
-insert into aWordList (word)  values ('být');
-insert into aWordList (word)  values ('bylo');
-
-
-
    select to_tsvector('english', 'Obvinění z porušování příměří, které je součástí širšího mírového plánu, však přicházejí i z druhé strany. „Premiér“ proruské Doněcké lidové republiky Alexandr Borodaj na sobotní tiskové konferenci tvrdil, že ostřelování je východoukrajinského města Slavjansk ukrajinskými jednotkami pokračuje. Podobně se vyjádřil také proruský gubernátor Donbasu Pavel Gubarev.')
 @@ to_tsquery('english', 'a | se | v | na | je | že | s | z | o | do | to | i | k | ve | si | pro | za | by | ale | jsem | jako | po | V | tak | jsou | které | od | který | jeho | však | už | nebo | byl | jen | co | bude | aby | u | jak | až | A | než | má | jsme | ze | která | když | při | být | bylo
 ');
@@ -129,7 +47,6 @@ Příliš žluťoučký kůň se napil žluté vody
 select * from ts_debug('cs','Příliš žluťoučký kůň se napil žluté vody');
 SELECT ts_lexize('cspell','napil'); ->napit
  */
-ç
 
 /*
  client.query("select string_agg(word, ' | ') as freq_words from pgWordFrequency where freq_cat = 'A';",
@@ -146,3 +63,37 @@ SELECT ts_lexize('cspell','napil'); ->napit
 // qunit, jasmine, sinon, mocha, jstestdriver, karma
 // ->will use karma with mocha and sinon
 // don't forget q.js (promises), Nock (mocks for http and network mocking and expectations)
+
+/* One word for testing function displaying word translation
+ pglemmatranslationcz.translation_lemma,
+ pglemmatranslationcz.translation_sense,
+ pglemmaen.lemma_gram_info,
+ pglemmaen.lemma,
+ pglemmaen.sense,
+ pglemmatranslationcz.translation_gram_info,
+ pgwordfrequency_short.freq_cat
+ "avšak";"formálněji";"conj";"but";"(yet)";"sp";"A "
+ "avšak";"na začátku věty, méně časté";"adv";"however";"(on the other hand)";"sp";"A "
+ "avšak";"na začátku věty, méně časté";"adv";"however";"(nonetheless)";"sp";"A "
+ "avšak";"na začátku věty, méně časté";"adv";"however";"(despite that)";"sp";"A "
+ */
+
+/*
+todo:
+**translation_lemma** | *translation_sense* | lemma | sense | lemma_gram_info
+* Avšak
+ (formálněji)	But (yet)	sp
+ na začátku věty, méně časté	However (on the other hand)	sp
+ na začátku věty, méně časté	However (nonetheless)	sp
+ na začátku věty, méně časté	However (despite that)	sp
+
+ div.from_lemma {from_lemma}
+ div.from_lemma_sense { from_lemma _sense}
+ div.to_lemma {to_lemma}
+ div.to_lemma_sense
+ div.to_lemma_gram_info
+ repeat each
+
+ and then some style info for the classes
+
+ */

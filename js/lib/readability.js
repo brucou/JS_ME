@@ -18,7 +18,7 @@
    // write several describe each for test page, and then write test for each function in the chain
    // test also the communication with the server, and the correct return of full text search (use done ()!! async!)
 
-define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, DS, UL, UT, IO) {
+ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, DS, UL, UT, IO) {
    var CLASS_SELECTOR_CHAR = ".";
    var ID_SELECTOR_CHAR = "#";
    var SOURCE = "source";
@@ -32,11 +32,11 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
        */
       logEntry("srv_qry_important_words");
       rpc_socket.emit('highlight_important_words', word, callback);
-         logExit("srv_qry_important_words");
-      }
+      logExit("srv_qry_important_words");
+   }
 
    //var cached_highlight = UT.async_cached(srv_qry_important_words, new DS.CachedValues([])); // no initial cache
-   var cached_highlight = UT.async_cached(srv_qry_important_words, null); // we use the non-cached version
+   var cached_highlight = UT.async_cached(srv_qry_important_words, []); // we use the non-cached version
 
    function RD_display_error(error_message) {
       if (error_message) {
@@ -45,7 +45,7 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
    }
 
    function make_article_readable(your_url, then_callback) {
-         var error_message = null;
+      var error_message = null;
       UL.url_load(your_url, function (html_text) {
          if (html_text) { // the query did not fail to return a non-empty text
             var $dest = extract_relevant_text_from_html(html_text);
@@ -98,6 +98,7 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
       /* we finished exploring, now gather the final stats (averages)
        */
       logWrite(DBG.TAG.INFO, "We finished exploring, now gather the final stats (averages)");
+      var i;
       for (i = 0; i < aDivRow.length; i++) {
          aDivRow[i].avg_avg_sentence_length = aDivRow[i].sum_avg_sentence_length / aDivRow[i].count_avg_sentence_length;
       }
@@ -211,8 +212,8 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio'], function ($, 
        */
       logEntry("highlight_proper_text");
 
-      var sWords =$el.text();
-      var osStore = new DS.OutputStore({countDown: 1, propagateResult: function () {
+      var sWords = $el.text();
+      var osStore = new UT.OutputStore({countDown: 1, propagateResult: function () {
          logEntry("propagateResult");
          var highlit_text = osStore.toString();
          $el.html(highlit_text);

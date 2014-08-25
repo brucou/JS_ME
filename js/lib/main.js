@@ -27,6 +27,7 @@ requirejs.config({
                     //the paths config could be for a directory.
                     paths  : {
                        jquery  : '../vendor/jquery-1.10.2.min',
+                       cache: '../vendor/cache',
                        css     : '../../css',
                        assets  : '../../assets',
                        socketio: '/socket.io/socket.io'
@@ -45,7 +46,7 @@ var main_socket, rpc_socket; //todo: remove from global from better encapsulatio
 var RPC_NAMESPACE = '/rpc';
 
 ///*
-requirejs(['jquery', 'debug', 'readability', 'socketio'], function ($, DEBUG, RD, IO) {
+requirejs(['jquery', 'debug', 'readability', 'socketio', 'cache'], function ($, DEBUG, RD, IO, CACHE) {
 
    // testing socket.io
 
@@ -59,15 +60,15 @@ requirejs(['jquery', 'debug', 'readability', 'socketio'], function ($, DEBUG, RD
    }
 
    $(function () {
-      setConfig(DBG.TAG.DEBUG, true, {by_default: true});
-      setConfig(DBG.TAG.TRACE, true, {by_default: true}); // default is don't show debug messages
-      setConfig(DBG.TAG.INFO, false, {by_default: true}); // default is don't show debug messages
+      setConfig(DBG.TAG.DEBUG, false, {by_default: true});
+      setConfig(DBG.TAG.TRACE, false, {by_default: true});
+      setConfig(DBG.TAG.INFO, false, {by_default: true});
       disableLog(DBG.TAG.DEBUG, "CachedValues.init");
       disableLog(DBG.TAG.DEBUG, "putValueInCache");
       disableLog(DBG.TAG.DEBUG, "disaggregate_input");
       disableLog(DBG.TAG.DEBUG, "async_cached_f");
-      enableLog(DBG.TAG.DEBUG, "propagateResult");
-      enableLog(DBG.TAG.DEBUG, "highlight_text_div"); // does not work because there is no trace associated
+      //enableLog(DBG.TAG.DEBUG, "propagateResult");
+      //enableLog(DBG.TAG.DEBUG, "highlight_text_div"); // does not work because there is no trace associated
       disableLog(DBG.TAG.TRACE, "get_text_stats"); //todo : review the log behaviour. first is DETAILED? : true, false, and in absnce of config, show or not show?
 
       rpc_socket = IO.connect(RPC_NAMESPACE);
