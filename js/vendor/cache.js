@@ -112,29 +112,30 @@
     * @constructor
     */
    Cache.LocalStorageCacheStorage = function (namespace) {
-      this.prefix_ = 'cache-storage.' + (namespace || 'default') + '.';
+      this.prefix_ = 'cache_storage.' + (namespace || 'default') + '.';
       // Regexp String Escaping from http://simonwillison.net/2006/Jan/20/escape/#p-6
       var escapedPrefix = this.prefix_.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
       this.regexp_ = new RegExp('^' + escapedPrefix)
-   }
+   };
    Cache.LocalStorageCacheStorage.prototype.get = function (key) {
       var item = window.localStorage[this.prefix_ + key];
+
       if (item) {
          return JSON.parse(item);
       }
       return null;
-   }
+   };
    Cache.LocalStorageCacheStorage.prototype.set = function (key, value) {
       window.localStorage[this.prefix_ + key] = JSON.stringify(value);
-   }
+   };
    Cache.LocalStorageCacheStorage.prototype.size = function (key, value) {
       return this.keys().length;
-   }
+   };
    Cache.LocalStorageCacheStorage.prototype.remove = function (key) {
       var item = this.get(key);
       delete window.localStorage[this.prefix_ + key];
       return item;
-   }
+   };
    Cache.LocalStorageCacheStorage.prototype.keys = function () {
       var ret = [], p;
       for (p in window.localStorage) {
@@ -142,9 +143,8 @@
             ret.push(p.replace(this.prefix_, ''));
          }
       }
-      ;
       return ret;
-   }
+   };
 
    /**
     * Retrieves an item from the cache.
@@ -224,11 +224,6 @@
       // add a new cache item to the cache
       if (this.storage_.get(key) != null) {
          this.removeItem(key);
-      }
-
-      // adding default options
-      if (!options) {
-         options = this.options;
       }
 
       this.addItem_(new Cache._CacheItem(key, value, options));

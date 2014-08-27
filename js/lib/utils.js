@@ -152,7 +152,7 @@ define(['data_struct'], function (DS) {
             //var isInCache = !(typeof aValue.notInCache !== 'undefined');
             if (fValue) {
                // value already cached, no callback, no execution, just assigning the value to the output array
-               logWrite(DBG.TAG.INFO, "Computation for value already in cache!", inspect(value), fValue);
+               logWrite(DBG.TAG.INFO, "Computation for value already in cache!", inspect(value), inspect(fValue));
                updateOutputStore(OutputStore, index, fValue);
                //fvalue = aValue;
             } else { // not in cache so cache it, except if it is a number
@@ -818,6 +818,9 @@ define(['data_struct'], function (DS) {
       this.getValueAt = function (pos) {
          // get the value at index pos
          return this.aStore[pos];
+      };
+      this.getValuesArray = function () {
+         return this.aStore;
       };
       this.invalidateAt = function (pos) {
          // update the counter to reflect callback who already returned

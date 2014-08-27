@@ -21,6 +21,7 @@
 
 var http, express, app, io, server, _; // server connection variables
 var pg, client; // database connection variables
+var util = require('util');
 const conString = "postgres://postgres:Italska184a@localhost/postgres"; // connection string
 const PREFIX_DIR_SERVER = '../server';
 const PREFIX_DIR_CLIENT = '.';
@@ -111,7 +112,7 @@ io.of(RPC_NAMESPACE).on('connect', function (socket) {
    console.log('Client connected');
 
    socket.on('highlight_important_words', function (msg, callback) {
-      console.log('message received');
+      console.log('highlight_important_words message received');
       //var data = JSON.parse(JSON_msg);
       //var msg = data.text;
       //var callback = data.callback;
@@ -152,6 +153,38 @@ io.of(RPC_NAMESPACE).on('connect', function (socket) {
       });
       LOG.write(LOG.TAG.INFO, 'query sent to database server, waiting for callback');
    });
+
+   socket.on('get_translation_info', function (msg, callback) {
+      console.log('get_translation_info message received');
+      // $1 : dictionary (here cspell)
+      // $2 : the word to be lemmatize
+      // !! issue : unsolved when ts_lexize returns two values... Ex. rámci -> {rámci,rámec}
+      // todo: create a stored procedure which converts {word, word} to first or last word?
+      var queryGetTranslationInfo = "SELECT DISTINCT pglemmatranslationcz.translation_lemma," +
+                                    "pglemmatranslationcz.translation_sense, " +
+                                    "pglemmaen.lemma_gram_info, pglemmaen.lemma, " +
+                                    "pglemmaen.sense, pglemmatranslationcz.translation_gram_info, " +
+                                    "pgwordfrequency_short.freq_cat " +
+                                    "FROM pgwordfrequency_short, pglemmaen, pglemmatranslationcz  " +
+                                    "WHERE pglemmatranslationcz.lemma_sense_id = pglemmaen.lemma_sense_id " +
+                                    "AND pglemmatranslationcz.translation_lemma = pgwordfrequency_short.lemma " +
+                                    "AND translation_lemma in " +
+                                    "(select(right(left(ts_lexize($1, $2)::varchar, -1), -1)))";
+      client.query(queryGetTranslationInfo, ['cspell', msg], function (err, result) {
+         if (err) {
+            LOG.write(LOG.TAG.ERROR, 'error running query', err);
+            callback(true, {data: null, error: err});
+            return;
+         }
+         if (result && result.rows) {
+            LOG.write("callback results", util.inspect(result.rows));
+            callback(false, {data: result.rows,  error: false});
+            // just in case, but because err is catched, should not be necessary
+         }
+      });
+
+   });
+
 });
 
 io.on('disconnect', function (socket) {

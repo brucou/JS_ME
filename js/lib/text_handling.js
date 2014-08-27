@@ -59,8 +59,8 @@ function get_text_stats(text) {
    // split by . which is not of the kind number followed by a . ->
    // count the number of split
    // for each split, count the number of words
-   var words =  text.toLowerCase().replace(/[,;.!\?]/g, '').trim().split(/[\s\/]+/g);
-   var word_number = (words[0].trim().length === 0)? 0 : words.length; // case "" e.g. text with spaces and punct only
+   var words = text.toLowerCase().replace(/[,;.!\?]/g, '').trim().split(/[\s\/]+/g);
+   var word_number = (words[0].trim().length === 0) ? 0 : words.length; // case "" e.g. text with spaces and punct only
    // todo: write better: this is remove punctuation sign, clean and split
    var sentence_number = text.split(".").length - 1;
    // naive algorithm for english, just count number of dots.
@@ -78,8 +78,8 @@ function get_text_stats(text) {
 
 function clean_text(sWords) {
    /*
-   @param sWords {string} the string to be clean
-   returns removes extra spaces and new lines by a single space. Also remove trailing and leading spaces
+    @param sWords {string} the string to be clean
+    returns removes extra spaces and new lines by a single space. Also remove trailing and leading spaces
     */
    return sWords.replace(/(\r\n|\n|\r)/gm, " ").replace(/\s+/g, ' ').trim();
 }
@@ -98,3 +98,4 @@ function disaggregate_input(sWords) {
       return ' ' + $1 + ' ';
    }).replace(/\s+/g, ' ').trim().split(' ');
 }
+

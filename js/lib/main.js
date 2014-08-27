@@ -27,7 +27,8 @@ requirejs.config({
                     //the paths config could be for a directory.
                     paths  : {
                        jquery  : '../vendor/jquery-1.10.2.min',
-                       cache: '../vendor/cache',
+                       cache   : '../vendor/cache',
+                       mustache: '../vendor/mustache',
                        css     : '../../css',
                        assets  : '../../assets',
                        socketio: '/socket.io/socket.io'
@@ -46,7 +47,7 @@ var main_socket, rpc_socket; //todo: remove from global from better encapsulatio
 var RPC_NAMESPACE = '/rpc';
 
 ///*
-requirejs(['jquery', 'debug', 'readability', 'socketio', 'cache'], function ($, DEBUG, RD, IO, CACHE) {
+requirejs(['jquery', 'debug', 'ReaderModel', 'socketio', 'cache'], function ($, DEBUG, RD, IO, CACHE) {
 
    // testing socket.io
 
