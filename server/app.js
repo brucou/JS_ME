@@ -160,16 +160,23 @@ io.of(RPC_NAMESPACE).on('connect', function (socket) {
       // $2 : the word to be lemmatize
       // !! issue : unsolved when ts_lexize returns two values... Ex. rámci -> {rámci,rámec}
       // todo: create a stored procedure which converts {word, word} to first or last word?
-      var queryGetTranslationInfo = "SELECT DISTINCT pglemmatranslationcz.translation_lemma," +
-                                    "pglemmatranslationcz.translation_sense, " +
-                                    "pglemmaen.lemma_gram_info, pglemmaen.lemma, " +
-                                    "pglemmaen.sense, pglemmatranslationcz.translation_gram_info, " +
-                                    "pgwordfrequency_short.freq_cat " +
-                                    "FROM pgwordfrequency_short, pglemmaen, pglemmatranslationcz  " +
-                                    "WHERE pglemmatranslationcz.lemma_sense_id = pglemmaen.lemma_sense_id " +
-                                    "AND pglemmatranslationcz.translation_lemma = pgwordfrequency_short.lemma " +
-                                    "AND translation_lemma in " +
-                                    "(select(right(left(ts_lexize($1, $2)::varchar, -1), -1)))";
+      var queryGetTranslationInfo = "SELECT DISTINCT " +
+                                    " pglemmatranslationcz.translation_lemma, " +
+                                    " pglemmatranslationcz.translation_sense, " +
+                                    " pglemmaen.lemma_gram_info, " +
+                                    " pglemmaen.lemma, " +
+                                    " pglemmaen.sense, " +
+                                    " pglemmatranslationcz.translation_gram_info, " +
+                                    " pgsamplesentenceencz.example_sentence_from, " +
+                                    " pgsamplesentenceencz.example_sentence_to, " +
+                                    " pgwordfrequency_short.freq_cat" +
+                                    " FROM pgwordfrequency_short, pglemmaen, pglemmatranslationcz, pgsamplesentenceencz " +
+                                    " WHERE " +
+                                    " pglemmatranslationcz.lemma_sense_id = pglemmaen.lemma_sense_id " +
+                                    " AND pglemmatranslationcz.lemma_sense_id = pgsamplesentenceencz.lemma_sense_id " +
+                                    " AND pglemmatranslationcz.translation_lemma = pgwordfrequency_short.lemma " +
+                                    " AND translation_lemma in " +
+                                    " (select(right(left(ts_lexize($1, $2)::varchar, -1), -1)))";
       client.query(queryGetTranslationInfo, ['cspell', msg], function (err, result) {
          if (err) {
             LOG.write(LOG.TAG.ERROR, 'error running query', err);

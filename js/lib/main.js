@@ -47,7 +47,7 @@ var main_socket, rpc_socket; //todo: remove from global from better encapsulatio
 var RPC_NAMESPACE = '/rpc';
 
 ///*
-requirejs(['jquery', 'debug', 'ReaderModel', 'socketio', 'cache'], function ($, DEBUG, RD, IO, CACHE) {
+requirejs(['jquery', 'debug', 'ReaderController', 'socketio'], function ($, DEBUG, RC, IO) {
 
    // testing socket.io
 
@@ -55,7 +55,7 @@ requirejs(['jquery', 'debug', 'ReaderModel', 'socketio', 'cache'], function ($, 
       logEntry("stub");
       var my_url = $("#" + url_param + " option:selected").val();
       $("#" + url_log).text(my_url);
-      RD.make_article_readable(my_url, RD.activate_read_words_over);
+      RC.make_article_readable(my_url, RC.activate_read_words_over);
       logWrite(DBG.TAG.DEBUG, "url", my_url);
       logExit("stub");
    }

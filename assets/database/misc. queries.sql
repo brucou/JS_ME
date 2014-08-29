@@ -8,17 +8,20 @@ SELECT
   pglemmaen.lemma,
   pglemmaen.sense,
   pglemmatranslationcz.translation_gram_info,
+  pgsamplesentenceencz.example_sentence_from,
+  pgsamplesentenceencz.example_sentence_to,
   pgwordfrequency_short.freq_cat
 FROM
   public.pgwordfrequency_short,
   public.pglemmaen,
-  public.pglemmatranslationcz
+  public.pglemmatranslationcz,
+  public.pgsamplesentenceencz
 WHERE
   pglemmatranslationcz.lemma_sense_id = pglemmaen.lemma_sense_id AND
+  pglemmatranslationcz.lemma_sense_id = public.pgsamplesentenceencz.lemma_sense_id AND
   pglemmatranslationcz.translation_lemma = pgwordfrequency_short.lemma
 ORDER BY
   pgwordfrequency_short.lemma ASC;
-
 /*
 * Some select to check lemmatization of postgres and word singled as being most frequent
 */

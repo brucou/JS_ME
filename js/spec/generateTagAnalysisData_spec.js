@@ -1,7 +1,7 @@
 /**
  * Created by bcouriol on 14/07/14.
  */
-define(['chai', 'readability', 'data_struct', 'utils_spec', 'socketio'], function (chai, RD, DS, US, IO) {
+define(['chai', '../lib/ReaderModel', 'data_struct', 'utils_spec', 'socketio'], function (chai, RD, DS, US, IO) {
    var expect = chai.expect;
    // function generateTagAnalysisData($source)
    // initialize the test by creating some content in the $source

@@ -2,7 +2,7 @@
  * Created by bcouriol on 2/06/14.
  */
 
-define([], function () {
+define(['utils'], function (UT) {
    return {
       ParagraphData: function ParagraphData(init_object) {
          /* For each paragraph, calculate a series of indicators
@@ -45,7 +45,7 @@ define([], function () {
       },
       Tooltip      : (function () {
          function Tooltip(args) {
-            var opts = $.extend({dismiss_on: 'mousemove'}, args)
+            var opts = $.extend({dismiss_on: 'mousemove'}, args);
             var self = this;
             var future_events = [];
             var tt;
@@ -81,7 +81,7 @@ define([], function () {
                   var non_content_x = tt.outerWidth(true) - tt.width();
 
                   tt.width($(window).width() - margin * 2 - non_content_x);
-                  tt.contents().find('.pos_translation').css('white-space', 'normal');
+                  tt.contents().find('.translation').css('white-space', 'normal');
 
                   tt.height(tt.contents().height() + 4);
 
@@ -130,6 +130,10 @@ define([], function () {
                tt.contents().find('.pos_translation').css('direction', text_direction || 'ltr');
             }
 
+            this.remove = function () {
+               tt.remove();
+            };
+
             this.show = function (x, y, content, text_direction) {
                logEntry("tooltip show");
                tt[0].contentDocument.body.innerHTML = content;
@@ -142,31 +146,26 @@ define([], function () {
                // Maybe some things are lazy evalutated? No idea.
                pos = position(x, y, tt);
 
+               self.resize();
+
                setup_dismiss(tt);
 
                bind_future_events(tt);
 
                set_text_direction(text_direction, tt);
 
-               tt.hide().css({ top: pos.y, left: pos.x }).fadeIn(100).queue(function () {
-                                                                               if (self.on_open) {
-                                                                                  self.on_open()
-                                                                               }
-                                                                               $(this).dequeue();
-                                                                            });
+               tt.css({ top: pos.y, left: pos.x, display: 'block'});
 
                logExit("tooltip show");
             };
 
             this.hide = function () {
-               logEntry("tooltip hide");
-               //tt.fadeOut(100).css('top', '-1500px').show().css({width: 0, height: 0});
-               tt.fadeOut(100).show();
-               logExit("tooltip hide");
+               //tt.css('display', 'none');
+               tt.html("");
             };
 
             this.is_hidden = function () {
-               return !tt || tt.css('top') == '-1500px';
+               return !tt || tt.css('display') == 'none';
             };
 
             this.is_visible = function () {
@@ -182,8 +181,16 @@ define([], function () {
             };
 
             this.resize = function () {
+               logEntry("resize tooltip");
+               logWrite(DBG.TAG.DEBUG, "tt contents height", tt.contents().height());
+               // don't know why we have to do it like this for it to work...
+               tt.height(tt.contents().height());
+               tt.css("height", "auto");
                tt.height(tt.contents().height());
                tt.width(tt.contents().width() + 10);
+               tt.css("width", "auto");
+               tt.width(tt.contents().width() + 10);
+               logExit("resize tooltip");
             };
 
             tt = $('<iframe>', {
