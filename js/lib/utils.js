@@ -145,26 +145,29 @@ define(['data_struct'], function (DS) {
          cvCachedValues = initialCache; // if a cache is passed in parameter then use that one
       }
 
-      var async_cached_f = function (value, OutputStore) {
+      var async_cached_f = function (value, osStore) {
          // could be refactored to separate functionality of OutputStore which is that of a stream buffer
          // it piles on values till a trigger (similar to "end" of stream) is detected, then a callback ensues
-         var index = OutputStore.push(["Input value", value].join(": ")); // this is in order to "book" a place in the output array to minimize chances that a concurrent exec does not take it
-         // index points at the temporary value;
-
+         // if OutputStore is a function, then it is considered to be the callback function with default values for OutputStore structure
          logEntry("async_cached_f");
 
+         if (isFunction(osStore)) {
+            logWrite(DBG.TAG.DEBUG, "callback function passed in async cached");
+            var f_callback = osStore;
+            osStore = new OutputStore({countdown: 1, callback: f_callback});
+         }
+         var index = osStore.push(["Input value", value].join(": ")); // this is in order to "book" a place in the output array to minimize chances that a concurrent exec does not take it
+         // index points at the temporary value;
+
          var fvalue = null;
-         // todo: remove the special treatment of number or find another way to do it, this is specific to highlight_important_words
          // todo : !! also applies to "", check that
          //logWrite(DBG.TAG.DEBUG, "cvCachedValues", inspect(cvCachedValues));
          if (cvCachedValues) { // if function is cached
-            //var aValue = cvCachedValues.getValueFromCache(value);
             var fValue = cvCachedValues.getItem(value);
-            //var isInCache = !(typeof aValue.notInCache !== 'undefined');
             if (fValue) {
                // value already cached, no callback, no execution, just assigning the value to the output array
                logWrite(DBG.TAG.INFO, "Computation for value already in cache!", inspect(value), inspect(fValue));
-               updateOutputStore(OutputStore, index, fValue);
+               updateOutputStore(osStore, index, fValue);
                //fvalue = aValue;
             } else { // not in cache so cache it, except if it is a number
                exec_f();
@@ -180,7 +183,7 @@ define(['data_struct'], function (DS) {
 
          function exec_f() {
             fvalue = f(value, callback);
-            OutputStore.setValueAt(index, OutputStore.getValueAt[index] + " | async call to f returns : " + fvalue);
+            osStore.setValueAt(index, osStore.getValueAt[index] + " | async call to f returns : " + fvalue);
             logWrite(DBG.TAG.INFO, "New async computation, logging value immediately returned by func", value, fvalue);
          }
 
@@ -199,9 +202,10 @@ define(['data_struct'], function (DS) {
                }
             }
             if (err) {
-               logWrite(DBG.TAG.ERROR, "error while executing query on server", err);
+               logWrite(DBG.TAG.ERROR, "error while executing async query on server", err);
             }
-            updateOutputStore(OutputStore, index, err || result.data);
+            osStore.setErr(err);
+            updateOutputStore(osStore, index, err || result.data);
             logExit("callback");
          }
       };
@@ -797,16 +801,31 @@ define(['data_struct'], function (DS) {
 
    function OutputStore(init) {
       // constructor
-      init = init || {countDown: 1, aStore: []}; // default parameters, execute action after 1 value is stored
-
-      this.aStore = init.aStore || [];
-      this.countDown = init.countDown || 1;
-      this.propagateResult = init.propagateResult || function () {
-         // here should be upadated by the caller to reflect actions to perform when
-         // all async calls have returned with their results in the store
-         logWrite(DBG.TAG.WARNING, "no propagateResult function!");
+      var self = this;
+      var defaults = {countDown: 1, aStore: [], err: null};
+      defaults.propagateResult = function (err) {
+         //prepare the reault values and call the callback function with it
+         // but call it with objects indicating success or failure
+         logEntry("propagateResult");
+         self.callback(err, self.aStore);
+         logExit("propagateResult");
+      }; // default parameters, execute action after 1 value is stored
+      defaults.callback = function (err, result) {
+         logWrite(DBG.TAG.WARNING, "no callback function for asynchronous function call!");
+         logWrite(DBG.TAG.DEBUG, "err, result", err, UT.inspect(result));
       };
 
+      init = init || defaults;
+
+      this.err = defaults.err;
+      this.aStore = init.aStore || defaults.aStore;
+      this.callback = init.callback || defaults.callback;
+      this.countDown = init.countDown || defaults.countDown;
+      this.propagateResult = init.propagateResult || defaults.propagateResult;
+
+      this.setErr = function(err) {
+         this.err=err;
+      };
       this.toString = function () {
          // print the concatenation of all values in storage
          var formatString = "";
@@ -839,7 +858,7 @@ define(['data_struct'], function (DS) {
          logEntry("invalidateAt");
          this.countDown = this.countDown - 1;
          if (this.countDown == 0) {
-            this.propagateResult();
+            this.propagateResult(self.err);
          }
          logExit("invalidateAt");
       };

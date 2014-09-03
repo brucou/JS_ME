@@ -59,3 +59,7 @@ tbody tr .sample_sentence_from {
     display: block;
     background: rgb(252, 247, 217);
 }
+
+.sample_sentence_to {
+    font-weight: bold;
+}

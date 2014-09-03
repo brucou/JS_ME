@@ -10,31 +10,34 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'ReaderModel', 'ReaderView
           var ERROR_DIV = "error_message";
 
           function RD_display_error(error_message) {
-             if (error_message) {
+            /**
+             *
+
+            if (error_message) {
                 $("#" + ERROR_DIV).html(error_message);
              }
+             */
+            return new DS.Error(error_message);
           }
 
-          function make_article_readable(your_url, then_callback) {
+          function make_article_readable(your_url) {
              var error_message = null;
+            var dfr= $.Deferred(); // to handle async results
              UL.url_load(your_url, function (html_text) {
                 if (html_text) { // the query did not fail to return a non-empty text
                    var $dest = RM.extract_relevant_text_from_html(html_text);
+                  dfr.resolve($dest);
                 } else {
-                   RD_display_error("<p> ERROR : could not retrieve the webpage </p>");
-                   return null;
+                  dfr.reject(RD_display_error("<p> ERROR : could not retrieve the webpage </p>"));
                 }
 
                 if ($dest) {
-                   $dest.appendTo("body");
-                   $("#" + ERROR_DIV).empty();
-                   then_callback($dest);
                 } else {
-                   RD_display_error("<p> ERROR : nothing to display </p><p> Possible cause : no important paragraph could be identified </p>");
-                   return null;
+                  dfr.reject(RD_display_error("<p> ERROR : nothing to display </p><p> Possible cause : no important paragraph could be identified </p>"));
                 }
 
              });
+            return dfr.promise();
           }
 
           function log() {
@@ -256,29 +259,19 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'ReaderModel', 'ReaderView
              if (word != '') {
                 logWrite(DBG.TAG.INFO, "Fetching translation for :", word);
 
-                /*
-                 var translation = null;
-                 if (!translation) {
-                 log('skipping empty translation');
-                 return;
-                 }
-                 */
-
-                var osStore = new UT.OutputStore({countDown: 1, propagateResult: function () {
-                   logEntry("propagateResult");
-                   var translate_text = "dummy text for now";//osStore.toString();
-                   var aValues = osStore.getValuesArray();
+                RM.cached_translation(word, function (err, aValues) {
                    var aQuery_result = aValues[0];
+                   if (err) {
+                      logWrite(DBG.TAG.ERROR, "An error ocurred", err);
+                      return null;
+                   }
                    if (aValues.length === 0 || // means nothing was returned from server and put in store
                        aQuery_result.length === 0) { // means server returned empty
                       logWrite(DBG.TAG.WARNING, "Query did not return any values");
                       return null; //todo: error management
                    }
                    show_translation(formatTranslationResults(aQuery_result));
-                   logExit("propagateResult");
-                }});
-
-                RM.cached_translation(word, osStore);
+                });
 
                 function show_translation(html_text) {
                    //if (tooltip) {tooltip.remove();}
@@ -301,7 +294,7 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'ReaderModel', 'ReaderView
               "example_sentence_to, " +
               "pgwordfrequency_short.freq_cat "
               */
-                // todo : make a render function in the view RV like backbone
+             // todo : make a render function in the view RV like backbone
              var html_text = MUSTACHE.to_html(RV.translation_template,
                                               {result_rows: aValues, translation_lemma: aValues[0].translation_lemma});
              //logWrite(DBG.TAG.DEBUG, "html_text", html_text);

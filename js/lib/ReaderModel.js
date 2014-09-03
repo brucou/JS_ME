@@ -214,17 +214,17 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio', 'cache'],
              if ((!sWords) || sWords.length === 0) {//dealing with empty or null string
                 return;
              }
-             var osStore = new UT.OutputStore({countDown: 1, propagateResult: function () {
+
+             highlight_words(sWords, function (err, aStore) {
                 logEntry("propagateResult");
-                var highlit_text = osStore.toString();
+                var highlit_text = aStore.toString();
+                logWrite(DBG.TAG.DEBUG, "aStore", aStore);
                 $el.html(highlit_text);
                 if (then_callback) {
                    then_callback(sWords, highlit_text, $el);
                 }
                 logExit("propagateResult");
-             }
-                                              });
-             highlight_words(sWords, osStore);
+             });
              logExit("highlight_proper_text");
           }
 
@@ -282,10 +282,11 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio', 'cache'],
              var aData = []; // array which will contain the analysis of text paragraphs
 
              // Do clean-up of in-the-way tags
-             $("script", $source).remove();
-             $("meta", $source).remove();
-             $("link", $source).remove();
-             $("iframe", $source).remove();
+             var el_source = $source[0];
+             $("script", el_source).remove();
+             $("meta", el_source).remove();
+             $("link", el_source).remove();
+             $("iframe", el_source).remove();
 
              /* For each paragraph, calculate a series of indicators
               number of sentences
@@ -294,7 +295,7 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio', 'cache'],
               the first enclosing div
               */
              logWrite(DBG.TAG.DEBUG, "Computing stats on text with tags", tagHTML);
-             $(tagHTML, $source).each(get_tag_stat);
+             $(tagHTML, el_source).each(get_tag_stat);
 
              logExit("generateTagAnalysisData");
              return aData;
