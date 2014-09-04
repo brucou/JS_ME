@@ -51,41 +51,54 @@ requirejs(['jquery', 'debug', 'data_struct', 'ReaderController', 'socketio'], fu
 
   // testing socket.io
 
-  function stub (url_param, url_log) {
+  function stub () {
     logEntry("stub");
     var rtView = can.view('tpl-reader-tool-stub');
 
     var rtAdapter = new can.Map({
-                                  url_to_load    : null,
-                                  error_message  : null,
-                                  setErrorMessage: function (text) {
+                                  controller      : null,
+                                  url_to_load     : null,
+                                  webpage_readable: null,
+                                  error_message   : null,
+                                  setErrorMessage : function (text) {
                                     this.attr("error_message", text);
-                                  }});
+                                  },
+                                  set_HTML_body   : function (html_text) {
+                                    this.attr("webpage_readable", html_text)
+                                  }
+                                });
 
     var ReaderToolController = can.Control.extend
     ({
-       init: function (el, options) {
-         $("body").html(rtView(rtAdapter));
-         var self = this;
+       init: function ($el, options) {
+         $el.html(rtView(rtAdapter)); //el already in jquery form
+         rtAdapter.controller = this;
        },
 
-       '#url_param change': function (el, ev) {
-         var my_url = el.val();
+       '#url_param change': function ($el, ev) {
+         var my_url = $el.val();
          rtAdapter.attr("url_to_load", my_url);
+         rtAdapter.setErrorMessage(null);
+         rtAdapter.set_HTML_body(null);
 
          var prm_success; // promise to manage async data reception
+         // todo: harnomize the signature of callback function to err, result with err and Error object
          prm_success = RC.make_article_readable(my_url);
          prm_success
             .fail(function (Error) {
                     if (Error instanceof DS.Error) {
+                      logWrite(DBG.TAG.ERROR, "Error in make_article_readable", Error.error_message);
                       rtAdapter.setErrorMessage(Error.error_message);
+                      rtAdapter.set_HTML_body(null);
                     }
                   })
-            .done(function ($html_content) {
-                    $html_content.appendTo("body");
+            .done(function (error, html_text) {
+                    logWrite(DBG.TAG.INFO, "success make_article_readable");
+                    rtAdapter.set_HTML_body(html_text);
                     rtAdapter.setErrorMessage("");
 
-                    RC.activate_read_words_over($html_content);
+                    // pas besoin d'un Jquery element ici ou ptet que c'est deja jQuery
+                    RC.activate_read_words_over(rtAdapter.controller.element);
                   });
        },
 
@@ -93,36 +106,37 @@ requirejs(['jquery', 'debug', 'data_struct', 'ReaderController', 'socketio'], fu
          console.log("entered");
          rtAdapter.attr("error_message", ev.data);
        }
-       /*can.trigger(el, {
-        type: "attributes",
-        attributeName: attrName,
-        target: el,
-        oldValue: oldValue,
-        bubbles: false
-        }, []);*/
      });
 
-    var rtController = new ReaderToolController("body");
+    var rtController = new ReaderToolController("#reader_tool");
 
+    /*can.trigger(el, {
+      type: "attributes",
+      attributeName: attrName,
+      target: el,
+      oldValue: oldValue,
+      bubbles: false
+      }, []);*/
     logExit("stub");
   }
 
   $(function () {
     setConfig(DBG.TAG.DEBUG, false, {by_default: true});
-    setConfig(DBG.TAG.TRACE, false, {by_default: true});
+    setConfig(DBG.TAG.TRACE, true, {by_default: true});
     setConfig(DBG.TAG.INFO, false, {by_default: true});
     disableLog(DBG.TAG.DEBUG, "CachedValues.init");
     disableLog(DBG.TAG.DEBUG, "putValueInCache");
     disableLog(DBG.TAG.DEBUG, "disaggregate_input");
     disableLog(DBG.TAG.DEBUG, "async_cached_f");
-    //enableLog(DBG.TAG.DEBUG, "propagateResult");
-    //enableLog(DBG.TAG.DEBUG, "highlight_text_div"); // does not work because there is no trace associated
+    disableLog(DBG.TAG.TRACE, "propagateResult");
+    disableLog(DBG.TAG.TRACE, "async cached callback");
+    disableLog(DBG.TAG.DEBUG, "highlight_text_in_div"); // does not work because there is no trace associated
     disableLog(DBG.TAG.TRACE, "get_text_stats"); //todo : review the log behaviour. first is DETAILED? : true, false, and in absnce of config, show or not show?
-
+    disableLog(DBG.TAG.TRACE, "generateTagAnalysisData");
     rpc_socket = IO.connect(RPC_NAMESPACE);
     logWrite(DBG.TAG.INFO, 'rpc_socket', 'connected');
 
-    stub("url_param", "url");
+    stub();
   });
 });
 // */
