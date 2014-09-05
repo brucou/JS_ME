@@ -51,35 +51,43 @@ requirejs(['jquery', 'debug', 'data_struct', 'ReaderController', 'socketio'], fu
 
   // testing socket.io
 
-  function stub () {
-    logEntry("stub");
+  function start () {
+    logEntry("start");
     var rtView = can.view('tpl-reader-tool-stub');
 
-    var rtAdapter = new can.Map({
-                                  controller      : null,
-                                  url_to_load     : null,
-                                  webpage_readable: null,
-                                  error_message   : null,
-                                  setErrorMessage : function (text) {
-                                    this.attr("error_message", text);
-                                  },
-                                  set_HTML_body   : function (html_text) {
-                                    this.attr("webpage_readable", html_text)
-                                  }
-                                });
+    /*
+     Using a view adapter to have in the same place all variables which are boudn in the view template
+     This also allows for cleaner code in the controller...
+     ...and the binding of the new controller instance when created...
+     ...and not forgetting to use attr to modify those live bindings
+     Another option would be to use this.options and pass the same data in an extra parameter when creating
+     the controller. In my opinion, this.options distract from what is being done
+     */
+    var viewAdapter = new can.Map({
+                                    controller      : null,
+                                    url_to_load     : null,
+                                    webpage_readable: null,
+                                    error_message   : null,
+                                    setErrorMessage : function (text) {
+                                      this.attr("error_message", text);
+                                    },
+                                    set_HTML_body   : function (html_text) {
+                                      this.attr("webpage_readable", html_text)
+                                    }
+                                  });
 
     var ReaderToolController = can.Control.extend
     ({
        init: function ($el, options) {
-         $el.html(rtView(rtAdapter)); //el already in jquery form
-         rtAdapter.controller = this;
+         $el.html(rtView(viewAdapter)); //el already in jquery form
+         viewAdapter.controller = this;
        },
 
        '#url_param change': function ($el, ev) {
          var my_url = $el.val();
-         rtAdapter.attr("url_to_load", my_url);
-         rtAdapter.setErrorMessage(null);
-         rtAdapter.set_HTML_body(null);
+         viewAdapter.attr("url_to_load", my_url);
+         viewAdapter.setErrorMessage(null);
+         viewAdapter.set_HTML_body(null);
 
          var prm_success; // promise to manage async data reception
          // todo: harnomize the signature of callback function to err, result with err and Error object
@@ -88,39 +96,39 @@ requirejs(['jquery', 'debug', 'data_struct', 'ReaderController', 'socketio'], fu
             .fail(function (Error) {
                     if (Error instanceof DS.Error) {
                       logWrite(DBG.TAG.ERROR, "Error in make_article_readable", Error.error_message);
-                      rtAdapter.setErrorMessage(Error.error_message);
-                      rtAdapter.set_HTML_body(null);
+                      viewAdapter.setErrorMessage(Error.error_message);
+                      viewAdapter.set_HTML_body(null);
                     }
                   })
             .done(function (error, html_text) {
                     logWrite(DBG.TAG.INFO, "success make_article_readable");
-                    rtAdapter.set_HTML_body(html_text);
-                    rtAdapter.setErrorMessage("");
+                    viewAdapter.set_HTML_body(html_text);
+                    viewAdapter.setErrorMessage("");
 
                     // pas besoin d'un Jquery element ici ou ptet que c'est deja jQuery
-                    RC.activate_read_words_over(rtAdapter.controller.element);
+                    RC.activate_read_words_over(viewAdapter.controller.element);
                   });
        },
 
        '#error_message errore': function (el, ev) {
          console.log("entered");
-         rtAdapter.attr("error_message", ev.data);
+         viewAdapter.attr("error_message", ev.data);
        }
      });
 
     var rtController = new ReaderToolController("#reader_tool");
 
     /*can.trigger(el, {
-      type: "attributes",
-      attributeName: attrName,
-      target: el,
-      oldValue: oldValue,
-      bubbles: false
-      }, []);*/
-    logExit("stub");
+     type: "attributes",
+     attributeName: attrName,
+     target: el,
+     oldValue: oldValue,
+     bubbles: false
+     }, []);*/
+    logExit("start");
   }
 
-  $(function () {
+  function init_log () {
     setConfig(DBG.TAG.DEBUG, false, {by_default: true});
     setConfig(DBG.TAG.TRACE, true, {by_default: true});
     setConfig(DBG.TAG.INFO, false, {by_default: true});
@@ -133,10 +141,17 @@ requirejs(['jquery', 'debug', 'data_struct', 'ReaderController', 'socketio'], fu
     disableLog(DBG.TAG.DEBUG, "highlight_text_in_div"); // does not work because there is no trace associated
     disableLog(DBG.TAG.TRACE, "get_text_stats"); //todo : review the log behaviour. first is DETAILED? : true, false, and in absnce of config, show or not show?
     disableLog(DBG.TAG.TRACE, "generateTagAnalysisData");
+  }
+
+  function init_socket () {
     rpc_socket = IO.connect(RPC_NAMESPACE);
     logWrite(DBG.TAG.INFO, 'rpc_socket', 'connected');
+  }
 
-    stub();
+  $(function () {
+    init_log();
+    init_socket();
+    start();
   });
 });
 // */
