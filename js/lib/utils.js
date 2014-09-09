@@ -73,7 +73,7 @@ define(['data_struct'], function (DS) {
 
           // So in that case, there is no mapping in the cache, so
           // compute everything and cache the values
-          logWrite(DBG.TAG.INFO, "Cache is empty");
+          logWrite(DBG.TAG.DEBUG, "Cache is empty");
           mapped_values = aArg.map(function (value) {
             return new DS.ValueMap({x: value, y: f(value)});
           });
@@ -81,7 +81,7 @@ define(['data_struct'], function (DS) {
           aCache = mapped_values.map(function (value) {
             return value;
           });
-          logWrite(DBG.TAG.INFO, "Cache is filled with computed values", aCache);
+          logWrite(DBG.TAG.DEBUG, "Cache is filled with computed values", aCache);
         }
         else {
           var aCacheInputs = aCache.map(function (valueMap) {
@@ -91,12 +91,12 @@ define(['data_struct'], function (DS) {
             var index = aCacheInputs.indexOf(value); // nice to have : instead of looking one by one in the cache, look for the whole cache intersection in the parameter array
             if (index > -1) {
               // value already cached
-              logWrite(DBG.TAG.INFO, "Computation for value already in cache!", value, aCache[index]);
+              logWrite(DBG.TAG.DEBUG, "Computation for value already in cache!", value, aCache[index]);
               return aCache[index];
             }
             else { // not in cache so cache it
               fvalue = f(value);
-              logWrite(DBG.TAG.INFO, "New computation, caching the resulting value!", value, fvalue);
+              logWrite(DBG.TAG.DEBUG, "New computation, caching the resulting value!", value, fvalue);
               var newVal = new DS.ValueMap({x: value, y: fvalue});
               aCache.push(newVal);
               return newVal;
@@ -170,7 +170,7 @@ define(['data_struct'], function (DS) {
         var fValue = cvCachedValues.getItem(value);
         if (fValue) {
           // value already cached, no callback, no execution, just assigning the value to the output array
-          logWrite(DBG.TAG.INFO, "Computation for value already in cache!", inspect(value), inspect(fValue));
+          logWrite(DBG.TAG.DEBUG, "Computation for value already in cache!", inspect(value), inspect(fValue));
           updateOutputStore(osStore, index, fValue);
           //fvalue = aValue;
         }

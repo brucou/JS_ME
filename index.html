@@ -19,6 +19,8 @@
     <link rel="stylesheet" href="css/normalize.css">
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/screen.css">
+    <link href="css/tooltip_iframe.css" rel="stylesheet" type="text/css">
+    <!--    <style type="text/css"></style> -->
     <link href='http://fonts.googleapis.com/css?family=Enriqueta:400,700' rel='stylesheet' type='text/css'>
     <script src="js/vendor/modernizr-2.6.2.min.js"></script>
     <script src="js/vendor/xregexp-min.js"></script>
@@ -112,9 +114,37 @@
 <div id="error_message"> {{error_message}} </div>
 <div id="content">{{{ webpage_readable }}}</div>
 
+
+
+
+
+
+
+
 </script>
 
+<!-- Template for the translating tooltip -->
+<script id="tpl-translate-tooltip" type="text/mustache">
+
+<div id="reader-tool-tooltip"
+     class='translation transover-tooltip'
+     style="top: {{top}};
+         left: {{left}};
+         width:{{width}};
+         height:{{height}};
+         display: {{display}};
+             text-align: {{text_align}};
+             position: fixed;
+         ">
+{{{ tooltip_html_content }}}
+</div>
+
+</script>
+
+<!-- Application container -->
 <div id="reader_tool">
+</div>
+<div id="iframe_container">
 </div>
 
 </body>

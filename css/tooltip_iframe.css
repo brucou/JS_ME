@@ -1,10 +1,3 @@
-body {
-    font-family: Arial, Helmet, Freesans, sans-serif;
-    font-size: 0.9em;
-    color: #333;
-    display: inline-block;
-}
-
 table {
     border-collapse: collapse;
     font-family: "Lucida Sans Unicode", "Lucida Grande", Sans-Serif;
@@ -41,25 +34,22 @@ tbody tr .sample_sentence_from {
 }
 
 .transover-tooltip {
-    text-align: left;
     border: 1px solid rgb(204, 204, 204);
     box-shadow: rgba(0, 0, 0, 0.2) 0px 2px 5px;
-    position: fixed;
     border-top-left-radius: 5px;
     border-top-right-radius: 5px;
     border-bottom-right-radius: 5px;
     border-bottom-left-radius: 5px;
     z-index: 2147483647;
-    top: 53px;
-    /*height: 266px;*/
-    /*width: 168px;*/
-    width:100%;
-    left: 407px;
-    opacity: 0;
-    display: block;
     background: rgb(252, 247, 217);
 }
 
 .sample_sentence_to {
     font-weight: bold;
+}
+
+.translation {
+    font-family: Arial, Helmet, Freesans, sans-serif;
+    font-size: 0.9em;
+    color: #333;
 }

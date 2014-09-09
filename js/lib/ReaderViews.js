@@ -4,8 +4,8 @@
 define([], function () {
   var RV = {};
   var tpl = [];
-  tpl.push("<div class='translation'>");
-  tpl.push("<table>");
+  tpl.push("<div class='translation' style='white-space : nowrap'>");
+  tpl.push("<table class='transover-tooltip'>");
   tpl.push("<thead>");
   tpl.push("<tr>");
   tpl.push("<th colspan='3'>{{translation_lemma}}</th>");
