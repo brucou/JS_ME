@@ -939,32 +939,38 @@ define(['data_struct'], function (DS) {
     return s;
   }
 
+  function fragmentFromString (strHTML) {
+    var temp = document.createElement('template');
+    temp.innerHTML = strHTML;
+    return temp.content;
+  }
 
   return {
-    isArray        : isArray,
-    caching        : caching,
-    trimInput      : trimInput,
-    isNotEmpty     : isNotEmpty,
-    inspect        : inspect,
-    isRegExp       : isRegExp,
-    isDate         : isDate,
-    isError        : isError,
-    timestamp      : timestamp,
-    inherits       : inherits,
-    _extend        : _extend,
-    hasOwnProperty : hasOwnProperty,
-    isString       : isString,
-    isPunct        : isPunct,
-    isFunction     : isFunction,
-    sPrintf        : String.format,
-    timeStamp      : timeStamp,
-    isNumberString : isNumberString,
-    async_cached   : async_cached,
-    OutputStore    : OutputStore,
-    CachedValues   : CachedValues,
-    getIndexInArray: getIndexInArray,
-    escape_html    : escape_html,
-    padding_left   : padding_left,
-    padding_right  : padding_right
+    isArray           : isArray,
+    caching           : caching,
+    trimInput         : trimInput,
+    isNotEmpty        : isNotEmpty,
+    inspect           : inspect,
+    isRegExp          : isRegExp,
+    isDate            : isDate,
+    isError           : isError,
+    timestamp         : timestamp,
+    inherits          : inherits,
+    _extend           : _extend,
+    hasOwnProperty    : hasOwnProperty,
+    isString          : isString,
+    isPunct           : isPunct,
+    isFunction        : isFunction,
+    sPrintf           : String.format,
+    timeStamp         : timeStamp,
+    isNumberString    : isNumberString,
+    async_cached      : async_cached,
+    OutputStore       : OutputStore,
+    CachedValues      : CachedValues,
+    getIndexInArray   : getIndexInArray,
+    escape_html       : escape_html,
+    padding_left      : padding_left,
+    padding_right     : padding_right,
+    fragmentFromString: fragmentFromString
   }
 });
