@@ -5,10 +5,6 @@
  * Created by bcouriol on 1/06/14.
  */
 
-// done: fine-grained tuning by tag and function of log displaying
-// done: added a timeStamp function to log time of messages
-// nice to have: changer tous les DBG_ en DBG.
-
 var DBG_INDENT_PREFIX = "";
 const DBG_INDENT_STRING = "--";
 const DBG_INDENT_STRING_LENGTH = DBG_INDENT_STRING.length;
@@ -34,6 +30,11 @@ var DBG = {
   // value all if set works for all function contexts
   CONTEXT: []
 };
+
+/** FAKE mechanism
+ * setup at a global level
+ */
+var FAKE_MAP={};
 
 function setConfig (tag, bool_flag, by_default) {
   DBG.CONFIG[tag] = {DETAIL: bool_flag, BY_DEFAULT: by_default.by_default};
@@ -122,7 +123,7 @@ function logForceWrite (tag, text, arg) {
   if (context) {
     context = context.substring(0, MAX_LETTERS);
   }
-  text = ['[', padding_right(context, ' ',MAX_LETTERS), ']', ' ', text].join("");
+  text = ['[', padding_right(context, ' ', MAX_LETTERS), ']', ' ', text].join("");
   if (arg) {
     for (i = 2; i != arguments.length; i++) {
       if (!arguments[i]) {
@@ -133,7 +134,7 @@ function logForceWrite (tag, text, arg) {
       }
     }
   }
-  console.log(padding_right(tag,' ',6) + DBG.SEP.TAG + text);
+  console.log(padding_right(tag, ' ', 6) + DBG.SEP.TAG + text);
 }
 
 /**
@@ -186,3 +187,4 @@ function timeStamp () {
   // Return the formatted string
   return date.join("/") + " " + time.join(":") + " " + suffix;
 }
+

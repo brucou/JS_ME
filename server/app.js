@@ -14,22 +14,27 @@
  Then 'cs' is the name for full text search
  */
 
-// todo : define a list (script file to create table) with important words -> to_tsquery, be careful with syntax 'word |...' cf. temp.sql.js
-// todo : connect with socket.io and receive a text file from client to return with important words
-// todo: add a debug systme
-// todo: check if db connections are pooled, otherwise pool them : performance should be better
+// TODO : define a list (script file to create table) with important words -> to_tsquery, be careful with syntax 'word |...' cf. temp.sql.js
+// TODO: add a debug systme
+// TODO: check if db connections are pooled, otherwise pool them : performance should be better
+// TODO : gather all query and query functionalities in a query object
 
 var http, express, app, io, server, _; // server connection variables
 var pg, client; // database connection variables
+
+var qryImportantWords;
+var queryIsOneWordImportant = "select to_tsvector('cs', '%s') @@ to_tsquery('cs', '%s') as highlit_text";
+
 var util = require('util');
+var LOG = require('debug');
+var U = require('utils');
+
+const RPC_NAMESPACE = '/rpc';
 const conString = "postgres://postgres:Italska184a@localhost/postgres"; // connection string
+const pgVERBATIM = "$random_some$"; // !! if this is already in the text, there will be a problem
+
 const PREFIX_DIR_SERVER = '../server';
 const PREFIX_DIR_CLIENT = '.';
-const pgVERBATIM = "$random_some$"; // !! if this is already in the text, there will be a problem
-// todo: randomize that constant
-
-// session variables : initialized one time
-var qryImportantWords;
 
 function initialize_server() {
    http = require('http');
@@ -87,11 +92,6 @@ initialize_server();
 initialize_database();
 initialize_string_lib();
 
-//var rpc = require('rpc'); // not needed anymore, can use callback parameter in emit function
-var LOG = require('debug');
-var U = require('utils');
-const RPC_NAMESPACE = '/rpc';
-
 function wrap_string(wrap_begin, word, wrap_end) {
    return [wrap_begin, word, wrap_end].join("");
 }
@@ -116,27 +116,20 @@ io.of(RPC_NAMESPACE).on('connect', function (socket) {
       //var data = JSON.parse(JSON_msg);
       //var msg = data.text;
       //var callback = data.callback;
-      // todo: remove the sprintf to use tje $1, $2 who protects again sql injuntion
+      // TODO: remove the sprintf to use tje $1, $2 who protects again sql injuntion
       //cf. https://github.com/brianc/node-postgres/wiki/Client#method-query-parameterized
 
-      // todo - escaping query, and write a template mechanism similar to html templates client side
+      // TODO - escaping query, and write a template mechanism similar to html templates client side
       var pgTable_WordFrequency = "pgwordfrequency";
       var queryHighlightImportantWords = "select ts_headline('cs', $1, to_tsquery('cs', $2), " +
                                          "'StartSel=\"<span class = ''highlight''>\", StopSel=\"</span>\", HighlightAll=true') " +
                                          "as highlit_text"; //important the first %s has no quotes
 
-      var queryIsOneWordImportant = "select to_tsvector('cs', '%s') @@ to_tsquery('cs', '%s') as highlit_text";
-      var queryFrequencyWords = "select word, frequency from " + pgTable_WordFrequency + " where ";
-      var queryString = queryHighlightImportantWords; // we go with that one now
-      // I also need to escape the problematic characters in the string I am passing as argument
-      function pg_escape_string(string) {
-         return pgVERBATIM + string + pgVERBATIM;
-      }
-
       var qryHighlightImportantWords = queryHighlightImportantWords;
       LOG.write(LOG.TAG.INFO, 'running query with text', msg);
 
       client.query(qryHighlightImportantWords, [msg, qryImportantWords], function (err, result) {
+        //TODO: change to err, result the callback
          if (err) {
             LOG.write(LOG.TAG.ERROR, 'error running query', err);
             callback(true, {data: null, error: err});
@@ -158,9 +151,8 @@ io.of(RPC_NAMESPACE).on('connect', function (socket) {
       console.log('get_translation_info message received');
       // $1 : dictionary (here cspell)
       // $2 : the word to be lemmatize
-      // !! issue : unsolved when ts_lexize returns two values... Ex. rámci -> {rámci,rámec}
-      // todo: create a stored procedure which converts {word, word} to first or last word?
-      var queryGetTranslationInfo = "SELECT DISTINCT " +
+     // The right left -1 -1 is dedicated to removing the begin and end parenthesis
+     var queryGetTranslationInfo = "SELECT DISTINCT " +
                                     " pglemmatranslationcz.translation_lemma, " +
                                     " pglemmatranslationcz.translation_sense, " +
                                     " pglemmaen.lemma_gram_info, " +
@@ -176,7 +168,8 @@ io.of(RPC_NAMESPACE).on('connect', function (socket) {
                                     " AND pglemmatranslationcz.lemma_sense_id = pgsamplesentenceencz.lemma_sense_id " +
                                     " AND pglemmatranslationcz.translation_lemma = pgwordfrequency_short.lemma " +
                                     " AND translation_lemma in " +
-                                    " (select(right(left(ts_lexize($1, $2)::varchar, -1), -1)))";
+                                    "     (select unnest(string_to_array(right(left(ts_lexize($1, $2)::varchar, -1), -1), ',')))";
+
       client.query(queryGetTranslationInfo, ['cspell', msg], function (err, result) {
          if (err) {
             LOG.write(LOG.TAG.ERROR, 'error running query', err);
@@ -201,6 +194,10 @@ io.on('disconnect', function (socket) {
 
 function print_rows(rows) {
    for (var i = 0; i < result.rows.length; i++) console.log(result.rows[i]);
+}
+
+function pg_escape_string(string) {
+  return pgVERBATIM + string + pgVERBATIM;
 }
 
 function close_connection() {

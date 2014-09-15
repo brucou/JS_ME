@@ -2,16 +2,15 @@
  * Created by bcouriol on 5/06/14.
  */
 
-  // todo : disable click on links anyways - interacts with word info functionality
-  // todo: !!test how the callback works in case of error in query on server
-  // todo: differ the display in DOM after receiving all results from callback from server (with timeout not to block)
-  // todo: I should also remove the repeated . signs (...) in the sentence counting
+  // TODO : disable click on links anyways - interacts with word info functionality
+  // TODO: !!test how the callback works in case of error in query on server
+  // nice to have : I should also remove the repeated . signs (...) in the sentence counting
   // issue: analyse why some paragraphs are not parsed : http://prazsky.denik.cz/zpravy_region/lenka-mrazova-dokonalost-je-moje-hodnota-20140627.html
-  // todo: add some style for code div
-  // todo: treat wikipedia as a special case. More special cases? http://en.wikipedia.org/wiki/Perranzabuloe
-  // todo : test highlight_important_words
-  // todo: include the title in the highlighting of words
-  // test also the communication with the server, and the correct return of full text search (use done ()!! async!)
+  // TODO: add some style for code div
+  // TODO: treat wikipedia as a special case. More special cases? http://en.wikipedia.org/wiki/Perranzabuloe
+  // TODO: include the title in the highlighting of words
+  // TODO : treat the case of text in div with no class or id (http://www.praha3.cz/noviny/akce-mestske-casti/vinohradske-vinobrani-nabidne-produkty.html)
+  // TODO : test also the communication with the server, and the correct return of full text search (use done ()!! async!)
 
 define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio', 'cache'],
        function ($, DS, UL, UT, IO, CACHE) {
@@ -26,7 +25,7 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio', 'cache'],
 
          var qry_cache_options = {
            expirationAbsolute: null,
-           expirationSliding : 60 * 15,
+           expirationSliding : 60 * 1500,
            priority          : Cache.Priority.HIGH,
            callback          : function (k, v) {
              console.log('key removed from cache :' + k);
@@ -57,6 +56,55 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio', 'cache'],
          var cached_highlight = UT.async_cached(srv_qry_important_words, null); // no caching
          highlight_words = cached_highlight; //we choose this one by default
          var cached_translation = UT.async_cached(srv_qry_word_translation, qry_translation_cache);
+
+         function make_article_readable (your_url) {
+           var dfr = $.Deferred(); // to handle async results
+
+           // TEST CODE
+           if (FAKE.should_be(make_article_readable)) {
+             return FAKE(make_article_readable, this)(dfr, url_load_callback, your_url);
+           }
+           ///////
+           UL.url_load(your_url, url_load_callback);
+           return dfr.promise();
+
+           function url_load_callback (html_text) {
+             if (html_text) { // the query did not fail to return a non-empty text
+               // TEST CODE
+               if (FAKE.should_be(url_load_callback)) {
+                 logWrite(DBG.TAG.INFO, "TEST MODE - page highlighted!");
+                 return FAKE(url_load_callback, this)(dfr, html_text);
+               }
+               ///////
+               var extract_promise = extract_relevant_text_from_html(html_text);
+
+               if (!extract_promise) {
+                 // nothing to display as no selected div were found
+                 logWrite(DBG.TAG.ERROR, "null returned from extract_relevant_text_from_html", "nothing to display");
+                 dfr.reject(new DS.Error("<p> ERROR : nothing to display </p>" +
+                                         "<p> Possible cause : no important paragraph could be identified </p>"),
+                            null);
+                 return;
+               }
+
+               extract_promise
+                  .done(function (err, html_text) {
+                          logWrite(DBG.TAG.INFO, "page highlighted!");
+                          //console.log("highlightd text: ", html_text);
+                          dfr.resolve(err, html_text);
+                        })
+                  .fail(function (err, result) {
+                          logWrite(DBG.TAG.ERROR, "error in return from extract_relevant_text_from_html");
+                          dfr.reject(new DS.Error(["<p> ERROR :", err.toString(), "</p>"].join(" ")),
+                                     null);
+                        });
+             }
+             else {
+               logWrite(DBG.TAG.ERROR, "no html_text from url_load");
+               dfr.reject(new DS.Error("<p> ERROR : could not retrieve the webpage </p>"), null);
+             }
+           }
+         }
 
          function extract_relevant_text_from_html (html_text) {
            /*
@@ -127,7 +175,6 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio', 'cache'],
                       //$dest.empty();
                     })
               .fail(function (error) {
-                      // todo: still to be written error management
                       // this happens if one of the selectedDivs provokes an error
                       logWrite(DBG.TAG.WARNING, "error occurred while processing highlight_important_words");
                       dfr.reject(error, null);
@@ -141,7 +188,7 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio', 'cache'],
 
          function compute_text_stats_group_by_div (aData) {
            /*
-            @param aData {array} todo
+            @param aData {array} TODO
             @returns {array}
             */
            var aDivRow = []; // contains stats for each div
@@ -290,13 +337,11 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio', 'cache'],
 
            // text_selectors cannot have SPAN inside, otherwise it will recurse infinitely
            // Wrap a span tag around text nodes for easier modification
-           // issue: if a span do not have only text, that text outside of tags might fail to be parsed
            // remove text_selectors filter, do it for all tags, except for span -> cf. filter function application
            $(TEXT_SELECTORS, $el).contents().filter(function () {
              // filter all the noise of spaces that are converted to Node_text elements
-             //todo : remove the this.nodeType!==1 redundant with the 3 put TEXT_NODE instead of 3
              return (this.nodeType !== 1) && (this.nodeType === 3) && (clean_text(this.textContent).length > 0);
-           }).wrap("<span></span>").end().filter("br").remove(); //todo : test on a text with br elements (old web pages)
+           }).wrap("<span></span>").end().filter("br").remove(); //TODO : test on a text with br elements (old web pages)
 
            var length = $el.children().length;
            if (length == 0) {
@@ -454,8 +499,8 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio', 'cache'],
          return {//that's the object returned only for requirejs, e.g. the visible interface exposed
            extract_relevant_text_from_html: extract_relevant_text_from_html,
            highlight_important_words      : highlight_important_words,
-           create_div_in_DOM              : create_div_in_DOM,
            cached_highlight               : cached_highlight,
-           cached_translation             : cached_translation
+           cached_translation             : cached_translation,
+           make_article_readable          : make_article_readable
          };
        });

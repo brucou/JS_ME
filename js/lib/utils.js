@@ -1,5 +1,14 @@
 /**
  * Created by bcouriol on 13/06/14.
+ * TODO: Error treatment
+ * - error treatment!!!!
+ * A lot of those functions have a callback err, result. The question is how to react and propagate those errors
+ * TODO: consistency between text handling text functions and utils tex functions
+ * - isPunct for example
+ * - - would be nice if punct list of characters would be language-dependant
+ * - - also word split function and the like in text handling should reuse the text utils here to ensure consistency
+ * - isNaN
+ * - - isNaN recognizes english formatting of numbers only
  */
 
 
@@ -23,99 +32,9 @@ define(['data_struct'], function (DS) {
     return Array.isArray(ar) || (typeof ar === 'object' && objectToString(ar) === '[object Array]');
   }
 
-  function caching (f, initial_cache) {
-    /*
-     Function who takes a function and returns an cached version of that function which memorized past computations
-     That function is also added some utilities function to empty, set and get its cache
-     f: the function to be cached. f takes an object and output another one
-     initial_cache : an array of valueMap object which are simply couples (x,y) where y=f(x)
-     NOTE: f: x -> y, but caching(f): [x] -> [y].
-     HYPOTHESIS : We suppose that it is more efficient to compute whole arrays of value
-     vs. sequentially computing single values
-     LIMITATION :
-     I don't think that's possible to create function inside this function, to empty,set or get cache, just recall the cached_f with an empty cache, but what about memory?
-     IMPROVEMENT : possibility to index the cache! But would make sense only for a large  set of value right? could use
-     a memory-based cache mechanish such as memcached (in-memory key-value store for small chunks of arbitrary data)?
-     or disk-based caching (localstorage)
-     KNOWN BUGS : sure inconsistency if the cache has one x and two y, e.g. if the mapping is not the one for a function
-     */
-    // issue: sure inconsistency if the cache has one x and two y, e.g. if the mapping is not the one for a function, that should be checked somewhere
-    // nice to have: test for performance, weak link is indexOf search in the cache.
-    // todo: change or delete the whole implementation - there are (a)sync. memoize in many places: https://github.com/medikoo/memoize
-
-    var aCache = initial_cache; // out of the function
-    /* check that aCache is an array
-     */
-    if (!isArray(aCache)) {
-      logWrite(DBG.TAG.WARNING,
-               "initial_cache parameter of function 'caching' not an array (forcing it to empty array)", aCache);
-      aCache = [];
-    }
-
-    var cached_f = function (aArg) {
-      /*
-       aArg is a single argument which is an array of values to be computed
-       */
-
-      // check that aArg is an array
-      logEntry("cached_f");
-      if (!isArray(aArg)) {
-        logWrite(DBG.TAG.ERROR, "cached_f function not called with array parameter", aArg);
-      }
-      else {
-
-        var mapped_values = [];
-        var fvalue = null;
-        logWrite(DBG.TAG.DEBUG, "aCache", aCache);
-        if (/*typeof aCache === "undefined" || null === aCache || */aCache.length === 0) {//already tested that it is an array
-          // could be the case if there is no second parameter for example
-          // just act as if cache is empty
-
-          // So in that case, there is no mapping in the cache, so
-          // compute everything and cache the values
-          logWrite(DBG.TAG.DEBUG, "Cache is empty");
-          mapped_values = aArg.map(function (value) {
-            return new DS.ValueMap({x: value, y: f(value)});
-          });
-          // now copy the computed values to the cache
-          aCache = mapped_values.map(function (value) {
-            return value;
-          });
-          logWrite(DBG.TAG.DEBUG, "Cache is filled with computed values", aCache);
-        }
-        else {
-          var aCacheInputs = aCache.map(function (valueMap) {
-            return valueMap.x;
-          });
-          mapped_values = aArg.map(function (value) {
-            var index = aCacheInputs.indexOf(value); // nice to have : instead of looking one by one in the cache, look for the whole cache intersection in the parameter array
-            if (index > -1) {
-              // value already cached
-              logWrite(DBG.TAG.DEBUG, "Computation for value already in cache!", value, aCache[index]);
-              return aCache[index];
-            }
-            else { // not in cache so cache it
-              fvalue = f(value);
-              logWrite(DBG.TAG.DEBUG, "New computation, caching the resulting value!", value, fvalue);
-              var newVal = new DS.ValueMap({x: value, y: fvalue});
-              aCache.push(newVal);
-              return newVal;
-            }
-          });
-        }
-        logExit("cached_f");
-        return mapped_values;
-      }
-    };
-    cached_f.cache = aCache;
-    cached_f.f = f; // giving a way to return to the original uncached version of f)
-
-    return cached_f;
-  }
-
   function async_cached (f, initialCache) {
     /*
-     todo TO REWRITE!!!
+     TODO TO UPDATE!!! We now a library for caching
      Function who takes a function and returns an cached version of that function which memorized past computations
      A cache object can be passed as a parameter. That cache object must implement the following interface:
      - getItem
@@ -132,9 +51,8 @@ define(['data_struct'], function (DS) {
      (propagateResult)
      @param f: the function to be applied. f takes an object and output another one
      @param initial_cache : a specific cache implemention OR if none, an array of valueMap object which are simply couples (x,y) where y=f(x), OR []
-     IMPROVEMENT : possibility to index or hashmap the cache! But would make sense only for a large  set of value right?
      */
-    // todo: refactor to separate the OutputStore functionality out in a higher-order function
+    // nice to have : redesign the outputstore function to detect end of stream instead of having a fixed countdown
 
     // Default implementation of CachedValues is an array, it needs to be able to have property through CachedValues[prop] = value
     var cvCachedValues;
@@ -164,7 +82,7 @@ define(['data_struct'], function (DS) {
       // index points at the temporary value;
 
       var fvalue = null;
-      // todo : !! also applies to "", check that
+      // TODO : !! also applies to "", check that
       //logWrite(DBG.TAG.DEBUG, "cvCachedValues", inspect(cvCachedValues));
       if (cvCachedValues) { // if function is cached
         var fValue = cvCachedValues.getItem(value);
@@ -198,7 +116,7 @@ define(['data_struct'], function (DS) {
         osOutputStore.invalidateAt(iIndex); // This is to propagate the change elsewhere who registered for an action to be taken
       }
 
-      function callback (err, result) {// todo : error treatment!!!!
+      function callback (err, result) {
         logEntry("async cached callback");
         if (cvCachedValues) {
           if (!(err)) {
@@ -217,7 +135,7 @@ define(['data_struct'], function (DS) {
       }
     };
 
-    async_cached_f.cache = cvCachedValues; // todo : seeing if it is possible to return the cache object for further modification
+    async_cached_f.cache = cvCachedValues;
     async_cached_f.f = f; // giving a way to return to the original uncached version of f)
     f.async_cached_f = async_cached_f;
 
@@ -439,7 +357,7 @@ define(['data_struct'], function (DS) {
 
   function isPunct (char) {
     // return true if the character char is a punctuation sign
-    // todo: improve to adjust list of punctuation by language
+    // TODO: improve to adjust list of punctuation by language
     if (char.length > 1) {
       return null;
     }
@@ -677,7 +595,6 @@ define(['data_struct'], function (DS) {
      On the down side, we might loose some efficiency in terms of storage, as each hash is a full-fledged new object.
      NOTE: keys can be any valid javascript string: cf. https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String
      NOTE: it is preferable to have keys trimmed and removed extra spaces to avoid unexpected or confusing results
-     nice to have: A better implementation could be to use indexedDb who has indexes, which can speed up searches
      However indexedDB currently has an asynchronous API, which makes it difficult to use in connection with
      synchronous functions
      */
@@ -947,7 +864,6 @@ define(['data_struct'], function (DS) {
 
   return {
     isArray           : isArray,
-    caching           : caching,
     trimInput         : trimInput,
     isNotEmpty        : isNotEmpty,
     inspect           : inspect,

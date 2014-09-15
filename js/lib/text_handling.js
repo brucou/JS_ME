@@ -1,5 +1,11 @@
 /**
  * Created by bcouriol on 11/05/14.
+ * TODO : add language support
+ * - word count depends heavily on punctuation sign and rules which are language-dependent
+ * For example in czech, 1.6.2014 is not three sentence but one date
+ * - get_text_stats : same
+ * - for each new language support added, all these function should be tested against that language
+ * TODO: implement a throw error mechanism
  */
 function getWordAtPoint(elem, x, y) {
    /*
@@ -39,21 +45,18 @@ function getWordAtPoint(elem, x, y) {
 }
 
 function get_text_stats(text) {
-   /*
+   /**
     @param text (string) The string text can be in several lines. Any HTML tags or else will be considered as normal text
     @returns an object with two fields:
     1. sentence_number
     2. avg_sentence_length
 
-    issue : The correctness of this would be depending on the particular language. For example in czech, 1.6.2014 is not three sentence but one date
-    todo : add a parameter for taking language into account
     LIMIT CASES : text="" -> {1,0}
     */
    logEntry("get_text_stats");
    if (!text) {
       logWrite(DBG.TAG.ERROR, "invalid parameter text: null or undefined", text);
       logExit("get_text_stats");
-      return null; //todo: implement a throw error mechanism
    }
 
    // split by . which is not of the kind number followed by a . ->
@@ -61,7 +64,6 @@ function get_text_stats(text) {
    // for each split, count the number of words
    var words = text.toLowerCase().replace(/[,;.!\?]/g, '').trim().split(/[\s\/]+/g);
    var word_number = (words[0].trim().length === 0) ? 0 : words.length; // case "" e.g. text with spaces and punct only
-   // todo: write better: this is remove punctuation sign, clean and split
    var sentence_number = text.split(".").length - 1;
    // naive algorithm for english, just count number of dots.
    // even for english could be improved with .+space (\n or " " etc or EOF)
@@ -91,7 +93,6 @@ function disaggregate_input(sWords) {
     That includes characters such as \n \r, etc. anything considered spaces by regexp
     puntuation signs are isolated
     Tested on czech, french and english language characters
-    nice to have : do further testing of international language support
     */
    // temp.sql: return clean_text(sWords).split(" ");
    return sWords.replace(/[^\u00C0-\u1FFF\u2C00-\uD7FF\w\s]|_/g, function ($1) {

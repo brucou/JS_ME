@@ -1,9 +1,3 @@
-//var your_url = 'http://internacional.elpais.com/internacional/2014/06/03/actualidad/1401797293_595478.html';
-
-/**********************
- * MAIN BODY
- */
-
 /*
  Convention : ALL_CAPS : constants
  sCamelHumps : variables
@@ -11,7 +5,13 @@
  ObjectConstructor : object
  */
 
-// nice to have documentation in code, refactoring, and split in file
+/**
+ * TODO:
+ * - remove sockets variables from global from better encapsulation, create a dedicated sio.js module
+ * - documentation in code, refactoring, and split in file
+ * - TESTING SUITE!
+  */
+
 
 /*
  Configuring require.js
@@ -43,20 +43,17 @@ requirejs.config({
  So we start the app here.
  */
 
-var main_socket, rpc_socket; //todo: remove from global from better encapsulation
+var main_socket, rpc_socket;
 var RPC_NAMESPACE = '/rpc';
 
 ///*
 requirejs(['jquery',
            'data_struct',
-           'ReaderController',
            'ReaderModel',
            'TranslateController',
            'socketio',
            'utils'],
-          function ($, DS, RC, RM, TC, IO, UT) {
-
-            // testing socket.io
+          function ($, DS, RM, TC, IO, UT) {
 
             function start () {
               logEntry("start");
@@ -96,8 +93,8 @@ requirejs(['jquery',
                    viewAdapter.set_HTML_body(null);
 
                    var prm_success; // promise to manage async data reception
-                   // todo: harnomize the signature of callback function to err, result with err and Error object
-                   prm_success = RC.make_article_readable(my_url);
+                   // TODO: harnomize the signature of callback function to err, result with err and Error object
+                   prm_success = RM.make_article_readable(my_url);
                    prm_success
                       .fail(function (Error) {
                               if (Error instanceof DS.Error) {
@@ -107,39 +104,22 @@ requirejs(['jquery',
                               }
                             })
                       .done(function (error, html_text) {
-                              logWrite(DBG.TAG.INFO, "success make_article_readable");
+                              logWrite(DBG.TAG.INFO, "URL read successfully");
                               viewAdapter.set_HTML_body(html_text);
                               viewAdapter.setErrorMessage("");
 
-                              //todo : switch to another controller for the tooltip!!
-                              //RC.activate_read_words_over(self.element);
-
-                              // start the tooltip controller targetting words in the $element from the reader tool controller
-                                                 // which is #reader_tool
                               var rtTranslateController = new TC.TranslateRTController(self.element, {translate_by: 'point'});
                             });
-                 },
-
-                 '#error_message errore': function (el, ev) {
-                   console.log("entered");
-                   viewAdapter.attr("error_message", ev.data);
                  }
                });
 
               var rtController = new ReaderToolController("#reader_tool");
 
-              /*can.trigger(el, {
-               type: "attributes",
-               attributeName: attrName,
-               target: el,
-               oldValue: oldValue,
-               bubbles: false
-               }, []);*/
               logExit("start");
             }
 
             function init_log () {
-              setConfig(DBG.TAG.DEBUG, false, {by_default: true});
+              setConfig(DBG.TAG.DEBUG, true, {by_default: true});
               setConfig(DBG.TAG.TRACE, true, {by_default: true});
               setConfig(DBG.TAG.INFO, false, {by_default: true});
               disableLog(DBG.TAG.DEBUG, "CachedValues.init");
@@ -148,9 +128,13 @@ requirejs(['jquery',
               disableLog(DBG.TAG.DEBUG, "async_cached_f");
               disableLog(DBG.TAG.TRACE, "propagateResult");
               disableLog(DBG.TAG.TRACE, "async cached callback");
-              disableLog(DBG.TAG.DEBUG, "highlight_text_in_div"); // does not work because there is no trace associated
-              disableLog(DBG.TAG.TRACE, "get_text_stats"); //todo : review the log behaviour. first is DETAILED? : true, false, and in absnce of config, show or not show?
+              disableLog(DBG.TAG.DEBUG, "highlight_text_in_div");
+              disableLog(DBG.TAG.DEBUG, "search_for_text_to_highlight");
+              disableLog(DBG.TAG.TRACE, "search_for_text_to_highlight");
+              disableLog(DBG.TAG.TRACE, "get_text_stats");
               disableLog(DBG.TAG.TRACE, "generateTagAnalysisData");
+              disableLog(DBG.TAG.TRACE, "getHitWord");
+              disableLog(DBG.TAG.DEBUG, "getHitWord");
             }
 
             function init_socket () {
@@ -158,8 +142,14 @@ requirejs(['jquery',
               logWrite(DBG.TAG.INFO, 'rpc_socket', 'connected');
             }
 
+            function init_fake() {
+              FAKE.config('make_article_readable', FAKE.fn.fake_make_article_readable);
+              FAKE.config('url_load_callback', FAKE.fn.url_load_callback);
+            }
+
             $(function () {
               init_log();
+              //init_fake();
               init_socket();
               start();
             });

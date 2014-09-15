@@ -62,20 +62,6 @@ define(['chai'], function (chai) {
             expect(get_text_stats(test_limit_cases_empty_spaces).avg_sentence_length).to.deep.equal(Math.round(0));
          });
 
-         /* todo: finish
-         it('limit cases : full of spaces or punct', function () {
-            var test_limit_cases_empty_spaces = "   !:?  ";
-            expect(get_text_stats(test_limit_cases_empty_spaces).sentence_number).to.deep.equal(1);
-            expect(get_text_stats(test_limit_cases_empty_spaces).avg_sentence_length).to.deep.equal(Math.round(0));
-         });
-
-
-         it('limit cases : czech punctuation (date format)', function () {
-            var test_limit_cases_czech_date = "   1.6.2014  !?:";
-            expect(get_text_stats(test_limit_cases_czech_date).sentence_number).to.deep.equal(1);
-            expect(get_text_stats(test_limit_cases_czech_date).avg_sentence_length).to.deep.equal(Math.round(3));
-         });
-         */
       });
 
       describe('clean_text', function () {

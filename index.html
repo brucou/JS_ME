@@ -16,14 +16,16 @@
 
     <!-- Place favicon.ico and apple-touch-icon.png in the root directory -->
 
+    <!-- global stylesheets -->
     <link rel="stylesheet" href="css/normalize.css">
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/screen.css">
-    <link href="css/tooltip_iframe.css" rel="stylesheet" type="text/css">
-    <!--    <style type="text/css"></style> -->
     <link href='http://fonts.googleapis.com/css?family=Enriqueta:400,700' rel='stylesheet' type='text/css'>
+
+    <!-- module stylesheets -->
+    <link href="css/tooltip_iframe.css" rel="stylesheet" type="text/css">
+
     <script src="js/vendor/modernizr-2.6.2.min.js"></script>
-    <script src="js/vendor/xregexp-min.js"></script>
 </head>
 <body>
 <!--[if lt IE 7]>
@@ -33,20 +35,28 @@
 <![endif]-->
 
 <!-- Add your site or application content here -->
-<script src="js/vendor/xregexp-unicode-base.js"></script>
-<script src="js/vendor/xregexp-unicode-categories.js"></script>
 <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
 <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.10.2.min.js"><\/script>')</script>
 <script src="js/vendor/can.jquery.dev.js"></script>
 <script src="js/vendor/introspect.js"></script>
 <!--  to get name of parameters a function is called with-->
 <script src="js/vendor/cache.js"></script>
+<!--  necessary for tooltip functionality -->
+<script src="js/vendor/xregexp-min.js"></script>
+<script src="js/vendor/xregexp-unicode-base.js"></script>
+<script src="js/vendor/xregexp-unicode-categories.js"></script>
 
+<!--  common libraries defining global funcionalities and variables -->
 <script src="js/lib/plugins.js"></script>
 <script src="js/lib/debug.js"></script>
 <script src="js/lib/text_handling.js"></script>
+<script src="js/lib/fake_data.js"></script>
+
+<!--  modules are managed with require.js -->
 <script data-main="js/lib/main.js" src="js/vendor/require-2.1.14.js"></script>
 
+<!--  view templates -->
+<!--  shell for now -->
 <script id="tpl-reader-tool-stub" type="text/mustache">
 <select id="url_param">
 
@@ -108,12 +118,16 @@
     </option>
     <option
             value="http://zpravy.idnes.cz/britsky-premier-cameron-vyzyva-k-lepsi-obrane-nato-fxf-/zpr_nato.aspx?c=A140805_170157_zpr_nato_inc#utm_source=sph.idnes&utm_medium=richtext&utm_content=top6">britain idnes</option>
+<option value="http://www.praha3.cz/noviny/akce-mestske-casti/vinohradske-vinobrani-nabidne-produkty.html">Wine
+</option>
 </select>
 
 <span id="url">{{url_to_load}}</span>
 <div id="error_message"> {{error_message}} </div>
 <div id="content">{{{ webpage_readable }}}</div>
+
 </script>
+<!--  ----------- -->
 
 <!-- Template for the translating tooltip -->
 <script id="tpl-translate-tooltip" type="text/mustache">
@@ -131,11 +145,14 @@ class='transover-tooltip'
          ">
 {{{ tooltip_html_content }}}
 </div>
+
 </script>
+<!--  ----------- -->
 
 <!-- Application container -->
 <div id="reader_tool">
 </div>
+<!--  ----------- -->
 
 </body>
 </html>
