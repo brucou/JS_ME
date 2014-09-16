@@ -310,10 +310,16 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio', 'cache'],
 
              highlight_words($el.text().trim(), function (err, aStore) {
                logEntry("highlight_proper_text callback");
-               var highlit_text = aStore.toString();
-               logWrite(DBG.TAG.DEBUG, "highlit_text", highlit_text);
-               $el.html(highlit_text);
-               dfr.resolve($el, highlit_text);
+               if (err) {
+                 logWrite(DBG.TAG.ERROR, "error in highlight words", err);
+                 dfr.reject(["error in highlight words", err].join(" : "));
+               }
+               else {
+                 var highlit_text = aStore.toString();
+                 logWrite(DBG.TAG.DEBUG, "highlit_text", highlit_text);
+                 $el.html(highlit_text);
+                 dfr.resolve($el, highlit_text);
+               }
                logExit("highlight_proper_text callback");
              });
 

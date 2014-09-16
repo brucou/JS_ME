@@ -120,7 +120,7 @@ define(['data_struct'], function (DS) {
         logEntry("async cached callback");
         if (cvCachedValues) {
           if (!(err)) {
-            cvCachedValues.setItem(value, result.data);
+            cvCachedValues.setItem(value, result);
           }
           else {
             cvCachedValues.setItem(value, null);
@@ -128,9 +128,12 @@ define(['data_struct'], function (DS) {
         }
         if (err) {
           logWrite(DBG.TAG.ERROR, "error while executing async query on server", err);
+          osStore.setErr(err);
+          osStore.invalidateAt(index);
         }
-        osStore.setErr(err);
-        updateOutputStore(osStore, index, err || result.data);
+        else {
+          updateOutputStore(osStore, index, result);
+        }
         logExit("async cached callback");
       }
     };
@@ -769,6 +772,9 @@ define(['data_struct'], function (DS) {
 
     this.setErr = function (err) {
       this.err = err;
+    };
+    this.getErr = function () {
+      return this.err;
     };
     this.toString = function () {
       // print the concatenation of all values in storage
