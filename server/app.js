@@ -18,13 +18,10 @@
 // TODO: add a debug systme
 // TODO: check if db connections are pooled, otherwise pool them : performance should be better
 // TODO : gather all query and query functionalities in a query object
-// TODO: use promises to ensure all variables are set before usage
 
 var http, express, app, io, server, _; // server connection variables
 var pgClient; //postgresSQL connection variable
 
-var qryImportantWords;
-var queryIsOneWordImportant = "select to_tsvector('cs', '%s') @@ to_tsquery('cs', '%s') as highlit_text";
 
 _ = require('underscore');
 var Util = require('util');

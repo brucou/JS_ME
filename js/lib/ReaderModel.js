@@ -65,7 +65,7 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio', 'cache'],
              return FAKE(make_article_readable, this)(dfr, url_load_callback, your_url);
            }
            ///////
-           UL.url_load(your_url, url_load_callback);
+           UL.url_load(encodeURI(your_url), url_load_callback);
            return dfr.promise();
 
            function url_load_callback (html_text) {

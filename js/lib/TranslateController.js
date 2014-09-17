@@ -83,7 +83,6 @@ define(['jquery',
                 if (this.options.translate_by != 'point') {
                   return;
                 }
-                logWrite(DBG.TAG.DEBUG, "mousestop x y event", ev.clientX, ev.clientY);
                 this.process(ev, this.$tooltip, this.options);
               },
               'click'               : function ($el, ev) {
@@ -91,7 +90,6 @@ define(['jquery',
                   return;
                 }
                 logEntry('Translate : click');
-                logWrite(DBG.TAG.DEBUG, "click x y event", ev.clientX, ev.clientY);
                 this.process(ev, this.$tooltip, this.options);
                 logExit('Translate : click');
                 return true;
