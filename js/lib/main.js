@@ -6,12 +6,20 @@
  */
 
 /**
- * TODO:
+ * TODO: MODULARITY
  * - remove sockets variables from global from better encapsulation, create a dedicated sio.js module
+ * - investigate how to have module both require.js and stand alone in same file
+ * TODO: DOCUMENTATION
  * - documentation in code, refactoring, and split in file
- * - TESTING SUITE!
+ * TODO: DEBUGGING
+ * - investigate automatic logEntry through deubg_Setup function who stubs all functions under windows
+ * - experiment with a log prototype function to see if the log shows the originating function correctly
+ * - fake all the server communication server - that should allow to run with debugging in webstorm
+ * TODO: TESTING
+ * - testing suite to write
+ * TODO: DEPLOYMENT
+ * -  PASSER SUR LE CLOUD!!!!
   */
-
 
 /*
  Configuring require.js

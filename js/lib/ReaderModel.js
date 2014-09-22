@@ -2,22 +2,24 @@
  * Created by bcouriol on 5/06/14.
  */
 
-  // TODO : disable click on links anyways - interacts with word info functionality
-  // TODO: !!test how the callback works in case of error in query on server
-  // nice to have : I should also remove the repeated . signs (...) in the sentence counting
-  // issue: analyse why some paragraphs are not parsed : http://prazsky.denik.cz/zpravy_region/lenka-mrazova-dokonalost-je-moje-hodnota-20140627.html
-  // TODO: add some style for code div
-  // TODO: treat wikipedia as a special case. More special cases? http://en.wikipedia.org/wiki/Perranzabuloe
-  // TODO: include the title in the highlighting of words
-  // TODO : treat the case of text in div with no class or id (http://www.praha3.cz/noviny/akce-mestske-casti/vinohradske-vinobrani-nabidne-produkty.html)
-  // TODO : test also the communication with the server, and the correct return of full text search (use done ()!! async!)
+/**
+ * TODO : CODE QUALITY
+ * TODO : FEATURES
+ * - disable click on links anyways - interacts with word info functionality
+ * - STYLE : add some style for code div
+
+ * nice to have : treat wikipedia as a special case. More special cases? http://en.wikipedia.org/wiki/Perranzabuloe
+ * TODO : BUGS
+ * issue : treat the case of text in div with no class or id (http://www.praha3.cz/noviny/akce-mestske-casti/vinohradske-vinobrani-nabidne-produkty.html)
+ * issue : analyse why some paragraphs are not parsed : http://prazsky.denik.cz/zpravy_region/lenka-mrazova-dokonalost-je-moje-hodnota-20140627.html
+ * issue : better support for language-dependant punctuation signs and idiosyncrasy (... vs . etc.)
+*/
 
 define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio', 'cache'],
        function ($, DS, UL, UT, IO, CACHE) {
 
          var CLASS_SELECTOR_CHAR = ".";
          var ID_SELECTOR_CHAR = "#";
-         // initialized when calling extract_rele.. to know which function to use : cached or not
          var highlight_words;
 
          const qry_translation_CACHE_SIZE = 1000; //max 1000 keys (frequent words) for this cache
@@ -52,9 +54,7 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio', 'cache'],
            logExit("srv_qry_important_words");
          }
 
-         //var cached_highlight = UT.async_cached(srv_qry_important_words, new DS.CachedValues([])); // no initial cache
-         var cached_highlight = UT.async_cached(srv_qry_important_words, null); // no caching
-         highlight_words = cached_highlight; //we choose this one by default
+         highlight_words = UT.async_cached(srv_qry_important_words, null); // no caching
          var cached_translation = UT.async_cached(srv_qry_word_translation, qry_translation_cache);
 
          function make_article_readable (your_url) {
@@ -505,7 +505,6 @@ define(['jquery', 'data_struct', 'url_load', 'utils', 'socketio', 'cache'],
          return {//that's the object returned only for requirejs, e.g. the visible interface exposed
            extract_relevant_text_from_html: extract_relevant_text_from_html,
            highlight_important_words      : highlight_important_words,
-           cached_highlight               : cached_highlight,
            cached_translation             : cached_translation,
            make_article_readable          : make_article_readable
          };

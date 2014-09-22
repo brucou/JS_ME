@@ -806,12 +806,12 @@ define(['data_struct'], function (DS) {
     this.invalidateAt = function (pos) {
       // update the counter to reflect callback who already returned
       // if all callbacks returned then we can execute the final function to propagate results where it matters
-      logEntry("invalidateAt");
+      //logEntry("invalidateAt");
       this.countDown = this.countDown - 1;
       if (this.countDown == 0) {
         this.propagateResult(self.err);
       }
-      logExit("invalidateAt");
+      //logExit("invalidateAt");
     };
     this.push = function (value) {
       // add a value in the store and return an index to it
